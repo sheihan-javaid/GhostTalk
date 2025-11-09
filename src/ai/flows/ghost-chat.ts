@@ -11,19 +11,19 @@ interface HistoryMessage {
 
 export async function ghostChat(history: HistoryMessage[]): Promise<string> {
   try {
-    // Prepare chat history for Gemini
+    // The entire history, including the last user message, is needed for context.
     const formattedHistory: Content[] = history.map(msg => ({
       role: msg.role,
       parts: msg.content.map(text => ({ text })),
     }));
 
-    // For a chat session, we only need the history, not the last message separately.
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    // The last message is part of the history, so we pop it to send it.
     const lastUserMessage = formattedHistory.pop();
     if (!lastUserMessage) {
         return 'Could not process your message.';
     }
-
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const chat = model.startChat({
       history: formattedHistory,
@@ -33,6 +33,7 @@ export async function ghostChat(history: HistoryMessage[]): Promise<string> {
       },
     });
 
+    // Send the last user message to the chat session.
     const result = await chat.sendMessage(lastUserMessage.parts);
     const response = result.response;
     const text = response.text();
