@@ -1,3 +1,10 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "upi-qr-code",
+      "description": "UPI QR code for anonymous donations",
+      "imageUrl": "https://i.ibb.co/6rWd4Wf/qr-code.png",
+      "imageHint": "qr code"
+    }
+  ]
 }

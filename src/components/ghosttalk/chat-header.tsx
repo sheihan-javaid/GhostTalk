@@ -14,6 +14,7 @@ import {
 import type { UiSettings } from '@/lib/types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 interface ChatHeaderProps {
   roomId: string;
@@ -28,6 +29,7 @@ export default function ChatHeader({ roomId, onSettingsChange, settings }: ChatH
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const anonymousUpiId = 'ghost-talk@privacy';
+  const upiQrCodeImage = PlaceHolderImages.find(img => img.id === 'upi-qr-code');
 
   useEffect(() => {
     // This needs to run on the client to get the window.location
@@ -78,14 +80,14 @@ export default function ChatHeader({ roomId, onSettingsChange, settings }: ChatH
                 </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col items-center gap-4 py-4">
-                <Image 
-                    src="https://placehold.co/200x200/212121/BE29EC?text=Scan+Me" 
-                    alt="Anonymous UPI QR Code"
+                {upiQrCodeImage && <Image 
+                    src={upiQrCodeImage.imageUrl}
+                    alt={upiQrCodeImage.description}
                     width={200}
                     height={200}
                     className="rounded-lg border-4 border-accent shadow-lg"
-                    data-ai-hint="qr code"
-                />
+                    data-ai-hint={upiQrCodeImage.imageHint}
+                />}
                 <p className="text-sm text-muted-foreground">Or copy the anonymous UPI ID below</p>
                  <div className="flex w-full max-w-sm items-center gap-2 p-2 rounded-md bg-secondary">
                     <input type="text" readOnly value={anonymousUpiId} className="flex-1 text-sm bg-transparent text-foreground truncate" />
