@@ -13,6 +13,7 @@ export interface Message {
     type: string;
     data: string; // base64 encoded
   };
+  recipientId: string;
 }
 
 export interface UiSettings {

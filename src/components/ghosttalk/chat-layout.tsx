@@ -9,14 +9,15 @@ import MessageList from './message-list';
 import MessageInput from './message-input';
 import ChatHeader from './chat-header';
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2 } from 'lucide-react';
-import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc } from 'firebase/firestore';
+import { Sparkles, Loader2, KeyRound } from 'lucide-react';
+import { useFirebase, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { decrypt, encrypt } from '@/lib/crypto';
+import { getMyPublicKey, initializeKeys, importPublicKey } from '@/lib/e2ee';
 
 const defaultSettings: UiSettings = {
-  messageExpiry: 0, // No expiry for Firestore-backed chat
+  messageExpiry: 0,
   themeColor: 'default',
   fontSize: 'medium',
   bubbleStyle: 'rounded',
@@ -31,11 +32,24 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
   const [isSending, setIsSending] = useState(false);
   const [isRoomLoading, setIsRoomLoading] = useState(true);
   const [currentRoomId, setCurrentRoomId] = useState(initialRoomId);
+  const [isKeysLoading, setIsKeysLoading] = useState(true);
 
   const { toast } = useToast();
   const { encryptFile } = useFileEncryption();
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
+
+  // Initialize crypto keys on first load
+  useEffect(() => {
+    const init = async () => {
+      if (user) {
+        setIsKeysLoading(true);
+        await initializeKeys();
+        setIsKeysLoading(false);
+      }
+    };
+    init();
+  }, [user]);
 
   // Resolve dynamic lobby rooms
   useEffect(() => {
@@ -43,24 +57,24 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
       if (initialRoomId.startsWith('lobby-')) {
         setIsRoomLoading(true);
         const region = initialRoomId.replace('lobby-', '');
+        if (!firestore) return;
         const roomsRef = collection(firestore, 'chatRooms');
         const q = query(
           roomsRef,
           where('isPublic', '==', true),
           where('region', '==', region),
-          // orderBy('createdAt', 'desc'), // This requires an index
           limit(1)
         );
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
           setCurrentRoomId(querySnapshot.docs[0].id);
         } else {
-           // No public lobby found, create one
-            const newRoom = {
+           const newRoom = {
                 name: `Public Lobby - ${region}`,
                 createdAt: serverTimestamp(),
                 region: region,
                 isPublic: true,
+                publicKeys: {},
             };
             const docRef = await addDoc(roomsRef, newRoom);
             setCurrentRoomId(docRef.id);
@@ -78,7 +92,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
   // Generate user's anonymous name for the session
   useEffect(() => {
     const getUsername = async () => {
-      if (user && !userName) { // Only generate if we have a user and no name yet
+      if (user && !userName) {
         try {
           const aiName = await generateAnonymousName();
           setUserName(aiName.name);
@@ -91,13 +105,41 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
     getUsername();
   }, [user, userName]);
   
-  // Memoize the Firestore query for messages
+  const roomRef = useMemoFirebase(() => {
+    if (!firestore || !currentRoomId) return null;
+    return doc(firestore, 'chatRooms', currentRoomId);
+  }, [firestore, currentRoomId]);
+
+  const { data: roomData } = useDoc(roomRef);
+
+  // Publish public key to the room
+  useEffect(() => {
+    const publishPublicKey = async () => {
+        if (roomRef && user && !isKeysLoading) {
+            const myPublicKey = await getMyPublicKey();
+            if (myPublicKey) {
+                const roomSnapshot = await getDoc(roomRef);
+                const currentPublicKeys = roomSnapshot.data()?.publicKeys || {};
+                
+                // Only update if the key is not already there
+                if (currentPublicKeys[user.uid] !== myPublicKey) {
+                    await updateDoc(roomRef, {
+                        [`publicKeys.${user.uid}`]: myPublicKey,
+                    });
+                }
+            }
+        }
+    };
+    publishPublicKey();
+  }, [roomRef, user, isKeysLoading]);
+
   const messagesQuery = useMemoFirebase(() => {
     if (!currentRoomId || isRoomLoading || !firestore) return null;
-    return query(collection(firestore, 'chatRooms', currentRoomId, 'messages'), orderBy('timestamp', 'asc'));
-  }, [firestore, currentRoomId, isRoomLoading]);
+    const allMessages = query(collection(firestore, 'chatRooms', currentRoomId, 'messages'), orderBy('timestamp', 'asc'));
+    if (!user) return allMessages;
+    return query(allMessages, where('recipientId', '==', user.uid));
+  }, [firestore, currentRoomId, isRoomLoading, user]);
 
-  // Subscribe to real-time messages
   const { data: firestoreMessages, isLoading: areMessagesLoading } = useCollection<Message>(messagesQuery);
   
   // Decrypt messages as they arrive
@@ -108,9 +150,16 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
       const decrypted = await Promise.all(
         firestoreMessages.map(async (msg) => {
           try {
-            const decryptedText = await decrypt(msg.encryptedText);
+            // Find sender's public key from room data
+            const senderPublicKeyJwk = roomData?.publicKeys?.[msg.userId];
+            if (!senderPublicKeyJwk) {
+                return { ...msg, text: '[Waiting for sender key...]' };
+            }
+            const senderPublicKey = await importPublicKey(senderPublicKeyJwk);
+            const decryptedText = await decrypt(msg.encryptedText, senderPublicKey);
             return { ...msg, text: decryptedText };
           } catch (e) {
+            console.error('Decryption error:', e);
             return { ...msg, text: '[Decryption Failed]' };
           }
         })
@@ -119,11 +168,11 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
     };
 
     decryptMessages();
-  }, [firestoreMessages]);
+  }, [firestoreMessages, roomData]);
 
 
   const handleSendMessage = useCallback(async (rawText: string, shouldAnonymize: boolean, file?: File) => {
-    if ((!rawText.trim() && !file) || isSending || !user || !userName || !currentRoomId || !firestore) return;
+    if ((!rawText.trim() && !file) || isSending || !user || !userName || !currentRoomId || !firestore || !roomData) return;
     setIsSending(true);
 
     try {
@@ -141,26 +190,44 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
         }
       }
       
-      const encryptedText = await encrypt(textToSend);
       const fileData = file ? await encryptFile(file) : undefined;
-      
-      const newMessage: Omit<Message, 'id' | 'timestamp'> = {
-        encryptedText: encryptedText,
-        text: '', // Text is now stored encrypted
-        userId: user.uid,
-        username: userName,
-        anonymized: shouldAnonymize && rawText !== textToSend,
-        file: fileData ? {
-          name: file.name,
-          type: file.type,
-          data: fileData,
-        } : undefined,
-      };
+      const fullMessageText = fileData 
+        ? `${textToSend}\n\nFile attached: ${file.name}` 
+        : textToSend;
 
-      const finalMessage = { ...newMessage, timestamp: serverTimestamp() };
+      const recipientIds = Object.keys(roomData.publicKeys || {}).filter(id => id !== user.uid);
+      recipientIds.push(user.uid); // Also send to self
 
       const messagesRef = collection(firestore, 'chatRooms', currentRoomId, 'messages');
-      addDocumentNonBlocking(messagesRef, finalMessage);
+
+      for (const recipientId of recipientIds) {
+        const recipientPublicKeyJwk = roomData.publicKeys?.[recipientId];
+        if (!recipientPublicKeyJwk) {
+            console.warn(`No public key for recipient ${recipientId}. Skipping.`);
+            continue;
+        }
+
+        const recipientPublicKey = await importPublicKey(recipientPublicKeyJwk);
+        const encryptedText = await encrypt(fullMessageText, recipientPublicKey);
+      
+        const newMessage: Omit<Message, 'id' | 'timestamp'> = {
+            encryptedText: encryptedText,
+            text: '', // Text is now stored encrypted
+            userId: user.uid,
+            username: userName,
+            recipientId: recipientId, // Set recipient for E2EE
+            anonymized: shouldAnonymize && rawText !== textToSend,
+            file: fileData ? {
+            name: file.name,
+            type: file.type,
+            data: fileData,
+            } : undefined,
+        };
+
+        const finalMessage = { ...newMessage, timestamp: serverTimestamp() };
+        addDocumentNonBlocking(messagesRef, finalMessage);
+      }
+
 
     } catch (error: any) {
       console.error("Failed to send message:", error);
@@ -172,7 +239,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
     } finally {
       setIsSending(false);
     }
-  }, [isSending, user, userName, currentRoomId, toast, encryptFile, firestore]);
+  }, [isSending, user, userName, currentRoomId, toast, encryptFile, firestore, roomData]);
   
   const handleSettingsChange = (newSettings: Partial<UiSettings>) => {
     setSettings(prev => ({...prev, ...newSettings}));
@@ -213,11 +280,17 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
 
   }, [settings]);
 
-  if (isUserLoading || isRoomLoading || !userName) {
+  if (isUserLoading || isRoomLoading || !userName || isKeysLoading) {
     return (
         <div className="flex flex-col h-screen bg-background items-center justify-center text-foreground">
             <Loader2 className="h-12 w-12 animate-spin text-accent" />
             <p className="mt-4 text-lg">Initializing your secure session...</p>
+             {isKeysLoading && 
+                <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                    <KeyRound className="h-4 w-4" />
+                    <span>Generating cryptographic keys...</span>
+                </div>
+            }
         </div>
     )
   }

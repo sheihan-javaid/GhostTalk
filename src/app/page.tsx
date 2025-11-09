@@ -46,6 +46,7 @@ export default function Home() {
         createdAt: serverTimestamp(),
         region: selectedRegion,
         isPublic: false,
+        publicKeys: {},
     };
 
     try {

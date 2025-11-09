@@ -33,9 +33,13 @@
                 "type": {"type": "string"},
                 "data": {"type": "string"}
             }
+        },
+        "recipientId": {
+          "type": "string",
+          "description": "The UID of the recipient, used for E2EE."
         }
       },
-      "required": ["userId", "username", "encryptedText", "timestamp"]
+      "required": ["userId", "username", "encryptedText", "timestamp", "recipientId"]
     },
     "ChatRoom": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -58,6 +62,10 @@
         "isPublic": {
             "type": "boolean",
             "description": "Indicates if the room is a public lobby or a private room."
+        },
+        "publicKeys": {
+            "type": "object",
+            "description": "A map of user UIDs to their public keys for E2EE."
         }
       },
       "required": ["name", "createdAt", "region", "isPublic"]

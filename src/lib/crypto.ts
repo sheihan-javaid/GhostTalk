@@ -1,35 +1,111 @@
-// This is a simulation of End-to-End Encryption (E2EE).
-// In a real-world application, you would use a robust cryptographic library
-// like the Web Crypto API (crypto.subtle) to implement a secure E2EE protocol
-// such as Signal Protocol (which involves key exchange, ratcheting, etc.).
+import { getMyPrivateKey } from './e2ee';
 
-/**
- * Simulates encrypting a message.
- * In a real implementation, this would use the recipient's public key.
- */
-export async function encrypt(text: string): Promise<string> {
-  // Simulate an async operation
-  await new Promise(resolve => setTimeout(resolve, 50));
-  // In a real app, this would be actual ciphertext
-  return `[encrypted]${Buffer.from(text).toString('base64')}`;
+// Helper function to convert ArrayBuffer to Base64
+function ab2str(buf: ArrayBuffer): string {
+  return Buffer.from(buf).toString('base64');
+}
+
+// Helper function to convert Base64 to ArrayBuffer
+function str2ab(str: string): ArrayBuffer {
+  return Buffer.from(str, 'base64');
 }
 
 /**
- * Simulates decrypting a message.
- * In a real implementation, this would use the user's private key.
+ * Encrypts a plaintext message for a recipient using their public key.
+ * This uses a standard ECIES-like approach (Elliptic Curve Integrated Encryption Scheme).
+ * 1. Generate a temporary (ephemeral) key pair for this encryption session.
+ * 2. Derive a shared secret using our ephemeral private key and the recipient's public key (ECDH).
+ * 3. Use the shared secret to derive a symmetric encryption key (AES-GCM) via HKDF.
+ * 4. Encrypt the plaintext with the AES-GCM key.
+ * 5. Package the ephemeral public key, the IV, and the ciphertext together.
  */
-export async function decrypt(encryptedText: string): Promise<string> {
-  // Simulate an async operation
-  await new Promise(resolve => setTimeout(resolve, 50));
-  if (encryptedText.startsWith('[encrypted]')) {
-    const base64Text = encryptedText.replace('[encrypted]', '');
-    try {
-      // In a real app, this would be actual decryption
-      return Buffer.from(base64Text, 'base64').toString('utf-8');
-    } catch (e) {
-      return "[Decryption Failed]";
-    }
+export async function encrypt(text: string, recipientPublicKey: CryptoKey): Promise<string> {
+  const textEncoder = new TextEncoder();
+  const encodedText = textEncoder.encode(text);
+
+  // 1. Generate ephemeral key pair
+  const ephemeralKeyPair = await crypto.subtle.generateKey(
+    { name: 'ECDH', namedCurve: 'P-256' },
+    true,
+    ['deriveKey']
+  );
+
+  // 2. Derive shared secret
+  const sharedSecret = await crypto.subtle.deriveKey(
+    { name: 'ECDH', public: recipientPublicKey },
+    ephemeralKeyPair.privateKey,
+    { name: 'AES-GCM', length: 256 },
+    true,
+    ['encrypt', 'decrypt']
+  );
+
+  // 3. Encrypt the message
+  const iv = crypto.getRandomValues(new Uint8Array(12)); // AES-GCM optimal IV size
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: iv },
+    sharedSecret,
+    encodedText
+  );
+
+  // 4. Export ephemeral public key to be sent with the message
+  const ephemeralPublicKeyJwk = await crypto.subtle.exportKey('jwk', ephemeralKeyPair.publicKey);
+  
+  // 5. Package and Base64 encode for transport
+  const packaged = {
+    epk: ephemeralPublicKeyJwk, // Ephemeral Public Key
+    iv: ab2str(iv),
+    ct: ab2str(ciphertext), // Ciphertext
+  };
+
+  return JSON.stringify(packaged);
+}
+
+/**
+ * Decrypts a packaged ciphertext using the user's private key.
+ * 1. Unpack the ephemeral public key, IV, and ciphertext.
+ * 2. Import the ephemeral public key.
+ * 3. Derive the same shared secret using our private key and the ephemeral public key.
+ * 4. Use the shared secret to derive the symmetric key.
+ * 5. Decrypt the ciphertext.
+ */
+export async function decrypt(encryptedPackage: string, senderPublicKey: CryptoKey): Promise<string> {
+  const packaged = JSON.parse(encryptedPackage);
+  const myPrivateKey = await getMyPrivateKey();
+
+  if (!myPrivateKey) {
+    throw new Error("Private key not found. Cannot decrypt.");
   }
-  // If not in the expected format, return as is (e.g., for unencrypted system messages)
-  return encryptedText;
+  
+  // 1. Unpack
+  const { epk, iv, ct } = packaged;
+  const ivAb = str2ab(iv);
+  const ciphertextAb = str2ab(ct);
+
+  // 2. Import ephemeral public key
+  const ephemeralPublicKey = await crypto.subtle.importKey(
+    'jwk',
+    epk,
+    { name: 'ECDH', namedCurve: 'P-256' },
+    true,
+    []
+  );
+
+  // 3. Derive shared secret
+  const sharedSecret = await crypto.subtle.deriveKey(
+    { name: 'ECDH', public: ephemeralPublicKey },
+    myPrivateKey,
+    { name: 'AES-GCM', length: 256 },
+    true,
+    ['encrypt', 'decrypt']
+  );
+  
+  // 5. Decrypt
+  const decryptedAb = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: ivAb },
+    sharedSecret,
+    ciphertextAb
+  );
+
+  const textDecoder = new TextDecoder();
+  return textDecoder.decode(decryptedAb);
 }
