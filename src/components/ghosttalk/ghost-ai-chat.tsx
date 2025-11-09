@@ -37,13 +37,13 @@ export default function GhostAiChat() {
         if (!input.trim()) return;
 
         const currentUserMessage: ChatMessage = { role: 'user', content: [input] };
-        const newHistoryWithUserMessage: ChatMessage[] = [...history, currentUserMessage];
-        setHistory(newHistoryWithUserMessage);
+        const newHistory: ChatMessage[] = [...history, currentUserMessage];
+        setHistory(newHistory);
         setInput('');
         setIsLoading(true);
 
         try {
-            const response = await ghostChat(newHistoryWithUserMessage);
+            const response = await ghostChat(newHistory);
             setHistory(prev => [...prev, { role: 'model', content: [response] }]);
         } catch (error) {
             console.error("Ghost AI Error:", error);
@@ -71,7 +71,7 @@ export default function GhostAiChat() {
                             {msg.role === 'user' && <User className="h-6 w-6 text-accent shrink-0"/>}
                         </div>
                     ))}
-                    {isLoading && (
+                    {isLoading && history.length > 0 && (
                          <div className="flex gap-3 justify-start">
                              <Bot className="h-6 w-6 text-accent shrink-0"/>
                              <div className="p-3 rounded-lg bg-background flex items-center">
