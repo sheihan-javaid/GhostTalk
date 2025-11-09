@@ -8,7 +8,7 @@ export async function testApiKey(): Promise<string> {
       return 'Error: Missing HUGGINGFACE_API_KEY in the .env file.';
     }
 
-    const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
+    const hf = new HfInference(process.env.HUGGINGFACE_API_KEY, { endpoint: "https://api-inference.huggingface.co/models" });
 
     const model = 'mistralai/Mistral-7B-Instruct-v0.2';
     const response = await hf.textGeneration({
