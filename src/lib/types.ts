@@ -8,26 +8,15 @@ export interface Message {
   username: string;
   timestamp: any | FieldValue;
   anonymized: boolean;
-  file?: {
-    name: string;
-    type: string;
-    data: string; // base64 encoded
-  };
 }
 
 // Represents the document stored in Firestore
 export interface ChatMessage {
-  id: string;
   senderId: string;
   senderName: string;
-  text: string;
+  encryptedPayload: string;
   timestamp: any | FieldValue;
   anonymized?: boolean;
-  file?: {
-    name: string;
-    type: string;
-    data: string; // base64 encoded
-  };
 }
 
 

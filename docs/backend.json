@@ -25,9 +25,9 @@
             "type": "string",
             "description": "The anonymous name of the sender."
         },
-        "text": {
+        "encryptedPayload": {
           "type": "string",
-          "description": "The plaintext content of the message."
+          "description": "The Base64-encoded, encrypted message payload."
         },
         "timestamp": {
           "type": "object",
@@ -38,7 +38,7 @@
             "description": "Indicates if the original message content was altered by the AI."
         }
       },
-      "required": ["senderId", "senderName", "text", "timestamp"]
+      "required": ["senderId", "senderName", "encryptedPayload", "timestamp"]
     },
     "ChatRoom": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -61,6 +61,10 @@
         "isPublic": {
             "type": "boolean",
             "description": "Indicates if the room is a public lobby or a private room."
+        },
+        "participants": {
+            "type": "object",
+            "description": "A map of user UIDs to their public key and anonymous name."
         }
       },
       "required": ["name", "createdAt", "region", "isPublic"]
@@ -76,11 +80,11 @@
       },
       "/chatRooms/{chatRoomId}": {
         "schema": { "$ref": "#/entities/ChatRoom" },
-        "description": "Stores chat room metadata."
+        "description": "Stores chat room metadata and participant public keys."
       },
       "/chatRooms/{roomId}/messages/{messageId}": {
         "schema": { "$ref": "#/entities/ChatMessage" },
-        "description": "Stores all messages for a specific chat room."
+        "description": "Stores all encrypted messages for a specific chat room."
       }
   }
 }

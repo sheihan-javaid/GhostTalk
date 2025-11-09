@@ -14,14 +14,16 @@ service cloud.firestore {
 
     // ===== Chat Rooms Collection =====
     match /chatRooms/{roomId} {
-      // Anyone can read or list chat room metadata
-      allow read: if true;
+      // Any authenticated user can read room metadata to find rooms
+      allow get, list: if request.auth != null;
 
-      // Only authenticated users can create new chat rooms
+      // Authenticated users can create rooms
       allow create: if request.auth != null;
 
-      // For now, disallow updates to room metadata after creation
-      allow update: if false;
+      // Allow authenticated users to add/update their own entry in the participants map
+      allow update: if request.auth != null &&
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['participants', 'participants.' + request.auth.uid]);
 
       // No one can delete a chat room
       allow delete: if false;
@@ -29,10 +31,10 @@ service cloud.firestore {
       // ===== Messages Subcollection =====
       match /messages/{messageId} {
         // Any authenticated user can read or list messages in any room.
-        // 'list' is required for collection queries.
+        // Users will decrypt messages on the client.
         allow read, list: if request.auth != null;
         
-        // Any authenticated user can write messages to any room
+        // Any authenticated user can write messages to any room.
         allow create: if request.auth != null;
 
         // Nobody can update or delete messages directly

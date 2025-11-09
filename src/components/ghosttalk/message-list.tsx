@@ -1,11 +1,9 @@
 import { useEffect, useRef } from 'react';
 import type { Message } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Shield, User, Paperclip, Download, File as FileIcon } from 'lucide-react';
+import { Shield, User } from 'lucide-react';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Timestamp } from 'firebase/firestore';
 
 interface MessageListProps {
@@ -50,49 +48,7 @@ function MessageItem({ message, isCurrentUser, showUsername }: { message: Messag
           isCurrentUser ? 'rounded-br-none motion-safe:hover:-translate-x-1' : 'rounded-bl-none motion-safe:hover:translate-x-1'
         )}
       >
-        {message.text && <p className="text-sm break-words">{message.text}</p>}
-        {message.file && (
-          <div className="mt-2">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left h-auto p-2 bg-background/20 hover:bg-background/40">
-                  <div className="flex items-center gap-2">
-                    <Paperclip className="h-5 w-5" />
-                    <div className="flex flex-col overflow-hidden">
-                      <span className="text-sm font-medium truncate">{message.file.name}</span>
-                       <span className="text-xs text-muted-foreground">Click to view</span>
-                    </div>
-                  </div>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-3xl">
-                <DialogHeader>
-                  <DialogTitle>{message.file.name}</DialogTitle>
-                </DialogHeader>
-                <div className="mt-4 flex items-center justify-center bg-muted/50 rounded-lg p-4 max-h-[70vh]">
-                  {message.file.type.startsWith('image/') ? (
-                    <img src={message.file.data} alt={message.file.name} className="max-w-full max-h-full object-contain h-auto rounded-md" />
-                  ) : message.file.type.startsWith('video/') ? (
-                    <video controls src={message.file.data} className="max-w-full max-h-full object-contain h-auto rounded-md" />
-                  ) : message.file.type.startsWith('audio/') ? (
-                    <audio controls src={message.file.data} className="w-full" />
-                  ) : (
-                    <div className="p-4 bg-muted rounded-md text-center flex flex-col items-center gap-4">
-                      <FileIcon className="h-16 w-16 text-muted-foreground"/>
-                      <p>Unsupported file type for preview.</p>
-                       <a href={message.file.data} download={message.file.name}>
-                        <Button className="mt-4">
-                          <Download className="mr-2 h-4 w-4" />
-                          Download
-                        </Button>
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        )}
+        <p className="text-sm break-words">{message.text}</p>
       </div>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span>{formattedTime}</span>
