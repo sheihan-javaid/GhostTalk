@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Ghost, Users, ArrowRight, Link as LinkIcon, Coffee, Globe, Zap, MessageSquareQuote, BarChart, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useFirebase, initiateAnonymousSignIn, useUser } from '@/firebase';
@@ -12,6 +12,8 @@ import { collection, serverTimestamp } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const regions = [
   { value: 'north-america', label: 'North America' },
@@ -25,6 +27,8 @@ const regions = [
 export default function Home() {
   const router = useRouter();
   const [selectedRegion, setSelectedRegion] = useState('north-america');
+  const [isCreateRoomDialogOpen, setIsCreateRoomDialogOpen] = useState(false);
+  const [newRoomName, setNewRoomName] = useState('');
   
   const { auth, firestore } = useFirebase();
   const { user } = useUser();
@@ -36,7 +40,7 @@ export default function Home() {
     }
   }, [user, auth]);
 
-  const createRoom = async (isPublic: boolean) => {
+  const createRoom = async (isPublic: boolean, name?: string) => {
     if (!user || !firestore) return;
 
     if (isPublic) {
@@ -45,7 +49,7 @@ export default function Home() {
     }
 
     const newRoomData = {
-        name: `Private Room`,
+        name: name || `Private Room`,
         createdAt: serverTimestamp(),
         region: selectedRegion,
         isPublic: false,
@@ -73,7 +77,11 @@ export default function Home() {
     router.push(`/chat/lobby-${selectedRegion}`);
   };
   
-  const createPrivateRoom = () => createRoom(false);
+  const handleCreatePrivateRoom = () => {
+    createRoom(false, newRoomName.trim() === '' ? 'Private Room' : newRoomName);
+    setIsCreateRoomDialogOpen(false);
+    setNewRoomName('');
+  };
 
   const handleLoungeFeatureClick = (feature: string) => {
     toast({
@@ -138,44 +146,73 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-               <LinkIcon className="h-8 w-8 text-accent" />
-               <span className="text-2xl font-headline">Private Room</span>
-            </CardTitle>
-            <CardDescription>
-              Create a private room and invite someone with a secret link.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={createPrivateRoom} variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold" disabled={!user}>
-              Create a Private Room
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </CardContent>
-        </Card>
+        <Dialog open={isCreateRoomDialogOpen} onOpenChange={setIsCreateRoomDialogOpen}>
+            <DialogTrigger asChild>
+                <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50 cursor-pointer">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-3">
+                        <LinkIcon className="h-8 w-8 text-accent" />
+                        <span className="text-2xl font-headline">Private Room</span>
+                        </CardTitle>
+                        <CardDescription>
+                        Create a private room and invite someone with a secret link.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold" disabled={!user}>
+                            Create a Private Room
+                            <ArrowRight className="ml-2 h-5 w-5" />
+                        </Button>
+                    </CardContent>
+                </Card>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Name Your Private Room</DialogTitle>
+                    <DialogDescription>
+                        Give your new private room a name to make it easier to identify.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="room-name" className="text-right">
+                        Name
+                        </Label>
+                        <Input
+                        id="room-name"
+                        value={newRoomName}
+                        onChange={(e) => setNewRoomName(e.target.value)}
+                        placeholder="e.g., Project Phoenix"
+                        className="col-span-3"
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleCreatePrivateRoom} disabled={!user}>Create Room</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
         
         <Dialog>
-          <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <Ghost className="h-8 w-8 text-accent" />
-                <span className="text-2xl font-headline">Ghost Lounge</span>
-              </CardTitle>
-              <CardDescription>
-                Explore experimental, privacy-focused chat modes.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DialogTrigger asChild>
+          <DialogTrigger asChild>
+            <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50 cursor-pointer">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <Ghost className="h-8 w-8 text-accent" />
+                  <span className="text-2xl font-headline">Ghost Lounge</span>
+                </CardTitle>
+                <CardDescription>
+                  Explore experimental, privacy-focused chat modes.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <Button variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold">
                   Enter the Lounge
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-              </DialogTrigger>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle className="text-2xl flex items-center gap-3">
@@ -265,4 +302,3 @@ export default function Home() {
       </footer>
     </div>
   );
-}
