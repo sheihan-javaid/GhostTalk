@@ -20,7 +20,6 @@ const moderationPrompt = ai.definePrompt({
     prompt: `You are a content moderator. Your task is to determine if the following text is appropriate. 
     The content should not contain hate speech, harassment, or explicit content.
     Text: "{{text}}"`,
-    model: 'gemini-pro',
 });
 
 export async function moderateConfession(text: string): Promise<{ isAppropriate: boolean; reason?: string; }> {
