@@ -36,7 +36,7 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
  * Does NOT await the write operation internally.
  * Returns the Promise for the new doc ref, but typically not awaited by caller.
  */
-export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
+export function addDocumentNonBlocking(colRef: CollectionReference, data: any): Promise<DocumentReference | void> {
   const promise = addDoc(colRef, data)
     .catch(error => {
       errorEmitter.emit(
@@ -46,7 +46,9 @@ export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
           operation: 'create',
           requestResourceData: data,
         })
-      )
+      );
+      // Re-throw the error to be caught by the caller's .catch block if they have one
+      throw error;
     });
   return promise;
 }

@@ -10,6 +10,8 @@ import { useState, useEffect } from 'react';
 import { useFirebase, initiateAnonymousSignIn, useUser } from '@/firebase';
 import { collection, serverTimestamp, query, where, getDocs, limit, addDoc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useToast } from '@/hooks/use-toast';
 
 const regions = [
   { value: 'north-america', label: 'North America' },
@@ -26,6 +28,7 @@ export default function Home() {
   
   const { auth, firestore } = useFirebase();
   const { user } = useUser();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!user && auth) {
@@ -49,13 +52,22 @@ export default function Home() {
         publicKeys: {},
     };
 
-    try {
-        const roomsRef = collection(firestore, 'chatRooms');
-        const docRef = await addDoc(roomsRef, newRoomData);
-        router.push(`/chat/${docRef.id}`);
-    } catch (error) {
-        console.error("Error creating private room:", error);
-    }
+    const roomsRef = collection(firestore, 'chatRooms');
+    // Use non-blocking write and handle navigation in the promise
+    addDocumentNonBlocking(roomsRef, newRoomData)
+      .then(docRef => {
+        if (docRef) {
+          router.push(`/chat/${docRef.id}`);
+        }
+      })
+      .catch(() => {
+        // The error is handled by the global emitter, but you can show a toast here if needed.
+        toast({
+            variant: "destructive",
+            title: "Uh oh! Something went wrong.",
+            description: "Could not create private room.",
+        });
+      });
   };
 
   const joinPublicLobby = async () => {

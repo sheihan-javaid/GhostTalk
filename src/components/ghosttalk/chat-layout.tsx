@@ -10,9 +10,9 @@ import MessageInput from './message-input';
 import ChatHeader from './chat-header';
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Loader2, KeyRound } from 'lucide-react';
-import { useFirebase, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { useFirebase, useUser, useCollection, useMemoFirebase, useDoc, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, updateDoc, getDoc, Timestamp } from 'firebase/firestore';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { decrypt, encrypt } from '@/lib/crypto';
 import { getMyPublicKey, initializeKeys, importPublicKey } from '@/lib/e2ee';
 
@@ -65,21 +65,31 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
           where('region', '==', region),
           limit(1)
         );
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-          setCurrentRoomId(querySnapshot.docs[0].id);
-        } else {
-           const newRoom = {
-                name: `Public Lobby - ${region}`,
-                createdAt: serverTimestamp(),
-                region: region,
-                isPublic: true,
-                publicKeys: {},
-            };
-            const docRef = await addDoc(roomsRef, newRoom);
-            setCurrentRoomId(docRef.id);
+        
+        try {
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                setCurrentRoomId(querySnapshot.docs[0].id);
+            } else {
+                const newRoom = {
+                    name: `Public Lobby - ${region}`,
+                    createdAt: serverTimestamp(),
+                    region: region,
+                    isPublic: true,
+                    publicKeys: {},
+                };
+                const docRef = await addDoc(roomsRef, newRoom);
+                setCurrentRoomId(docRef.id);
+            }
+        } catch (error: any) {
+            const permissionError = new FirestorePermissionError({
+                path: 'chatRooms',
+                operation: 'list',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        } finally {
+            setIsRoomLoading(false);
         }
-        setIsRoomLoading(false);
       } else {
         setIsRoomLoading(false);
       }
@@ -115,23 +125,21 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
   // Publish public key to the room
   useEffect(() => {
     const publishPublicKey = async () => {
-        if (roomRef && user && !isKeysLoading) {
+        if (roomRef && user && !isKeysLoading && roomData) {
             const myPublicKey = await getMyPublicKey();
             if (myPublicKey) {
-                const roomSnapshot = await getDoc(roomRef);
-                const currentPublicKeys = roomSnapshot.data()?.publicKeys || {};
+                const currentPublicKeys = roomData.publicKeys || {};
                 
                 // Only update if the key is not already there
                 if (currentPublicKeys[user.uid] !== myPublicKey) {
-                    await updateDoc(roomRef, {
-                        [`publicKeys.${user.uid}`]: myPublicKey,
-                    });
+                    const updatePayload = { [`publicKeys.${user.uid}`]: myPublicKey };
+                    updateDocumentNonBlocking(roomRef, updatePayload);
                 }
             }
         }
     };
     publishPublicKey();
-  }, [roomRef, user, isKeysLoading]);
+  }, [roomRef, user, isKeysLoading, roomData]);
 
   const messagesQuery = useMemoFirebase(() => {
     if (!firestore || !currentRoomId || isRoomLoading || !user) return null;
