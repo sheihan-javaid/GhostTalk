@@ -8,15 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, Heart } from 'lucide-react';
+import { Loader2, Send, Heart, Paperclip, X } from 'lucide-react';
 import { moderateConfession } from '@/ai/flows/moderate-confession';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 interface Confession {
   id: string;
   text: string;
   timestamp: any;
   likes: number;
+  media?: string; // Data URL for the image
 }
 
 export default function ConfessionWall() {
@@ -24,6 +27,8 @@ export default function ConfessionWall() {
   const { toast } = useToast();
 
   const [newConfession, setNewConfession] = useState('');
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [isPosting, setIsPosting] = useState(false);
   const [likedConfessions, setLikedConfessions] = useState<string[]>([]);
 
@@ -34,8 +39,40 @@ export default function ConfessionWall() {
 
   const { data: confessions, isLoading } = useCollection<Omit<Confession, 'id'>>(confessionsQuery);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        toast({ variant: 'destructive', title: 'Error', description: 'File size cannot exceed 2MB.' });
+        return;
+      }
+      setMediaFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setMediaPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeMedia = () => {
+    setMediaFile(null);
+    setMediaPreview(null);
+    const fileInput = document.getElementById('file-input') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+  };
+  
+  const fileToDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+    });
+  }
+
   const postConfession = async () => {
-    if (!user || !firestore || !newConfession.trim()) return;
+    if (!user || !firestore || (!newConfession.trim() && !mediaFile)) return;
     setIsPosting(true);
     
     try {
@@ -47,13 +84,24 @@ export default function ConfessionWall() {
         return;
       }
       
-      const confessionData = {
+      let mediaDataUrl: string | undefined = undefined;
+      if (mediaFile) {
+        mediaDataUrl = await fileToDataUrl(mediaFile);
+      }
+
+      const confessionData: {text: string, timestamp: any, likes: number, media?: string} = {
         text: newConfession,
         timestamp: serverTimestamp(),
         likes: 0,
       };
+
+      if (mediaDataUrl) {
+          confessionData.media = mediaDataUrl;
+      }
+      
       await addDocumentNonBlocking(collection(firestore, 'confessions'), confessionData);
       setNewConfession('');
+      removeMedia();
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Could not post confession.' });
     } finally {
@@ -88,9 +136,33 @@ export default function ConfessionWall() {
               onChange={(e) => setNewConfession(e.target.value)}
               rows={3}
             />
-            <Button onClick={postConfession} disabled={isPosting || !newConfession.trim()} className="w-full">
-              {isPosting ? <Loader2 className="animate-spin" /> : <><Send className="mr-2 h-4 w-4" /> Post Anonymously</>}
-            </Button>
+            {mediaPreview && (
+              <div className="relative w-full max-w-xs mx-auto">
+                <Image
+                  src={mediaPreview}
+                  alt="Media preview"
+                  width={400}
+                  height={400}
+                  className="rounded-md object-contain max-h-64 w-auto"
+                />
+                <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={removeMedia}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            <div className="flex justify-between items-center">
+              <label htmlFor="file-input" className="cursor-pointer">
+                <Button asChild variant="ghost" className="text-muted-foreground">
+                  <div>
+                    <Paperclip className="h-5 w-5"/>
+                    <input id="file-input" type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                  </div>
+                </Button>
+              </label>
+              <Button onClick={postConfession} disabled={isPosting || (!newConfession.trim() && !mediaFile)} className="w-48">
+                {isPosting ? <Loader2 className="animate-spin" /> : <><Send className="mr-2 h-4 w-4" /> Post Anonymously</>}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -98,18 +170,33 @@ export default function ConfessionWall() {
           {isLoading && <div className="text-center"><Loader2 className="animate-spin mx-auto"/></div>}
           {confessions?.map(confession => (
             <Card key={confession.id}>
-              <CardContent className="p-4 flex justify-between items-start">
-                <p className="text-foreground break-words pr-4">{confession.text}</p>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => handleLike(confession.id)}
-                    disabled={likedConfessions.includes(confession.id)}
-                  >
-                    <Heart className={cn("h-5 w-5", likedConfessions.includes(confession.id) ? "text-red-500 fill-current" : "text-muted-foreground")} />
-                  </Button>
-                  <span className="text-sm text-muted-foreground">{confession.likes || 0}</span>
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 break-words pr-4">
+                    {confession.text && <p className="text-foreground">{confession.text}</p>}
+                    {confession.media && (
+                      <div className="mt-2">
+                        <Image 
+                          src={confession.media}
+                          alt="Confession media"
+                          width={600}
+                          height={600}
+                          className="rounded-md max-h-[50vh] w-auto object-contain"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleLike(confession.id)}
+                      disabled={likedConfessions.includes(confession.id)}
+                    >
+                      <Heart className={cn("h-5 w-5", likedConfessions.includes(confession.id) ? "text-red-500 fill-current" : "text-muted-foreground")} />
+                    </Button>
+                    <span className="text-sm text-muted-foreground">{confession.likes || 0}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>

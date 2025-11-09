@@ -81,7 +81,8 @@
       "properties": {
         "text": { "type": "string" },
         "timestamp": { "type": "object" },
-        "likes": { "type": "number", "description": "Count of likes" }
+        "likes": { "type": "number", "description": "Count of likes" },
+        "media": { "type": "string", "description": "A data URL of the shared media." }
       },
       "required": ["text", "timestamp"]
     },
