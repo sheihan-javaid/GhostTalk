@@ -23,7 +23,7 @@ service cloud.firestore {
         allow get: if request.auth != null && resource.data.recipientId == request.auth.uid;
         
         // A user can LIST (query) messages ONLY IF the query explicitly filters for their own UID.
-        // This is the key fix for the "Missing or insufficient permissions" error.
+        // This rule inspects the query itself to ensure it's secure.
         allow list: if request.auth != null
                     && request.query.where[0][0] == "recipientId"
                     && request.query.where[0][1] == "=="
