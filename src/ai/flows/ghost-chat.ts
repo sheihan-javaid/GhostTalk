@@ -13,13 +13,13 @@ export async function ghostChat(history: ChatMessage[]): Promise<string> {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    // ✅ Gemini expects `role` to be "user" or "model" and `parts` to contain text
+    // Gemini expects `role` to be "user" or "model" and `parts` to contain text
     const formattedHistory = history.map(msg => ({
       role: msg.role,
       parts: msg.content.map(text => ({ text })),
     }));
 
-    // ✅ Pass the formatted history directly to generateContent()
+    // Pass the formatted history directly to generateContent()
     const result = await model.generateContent({
       contents: formattedHistory,
       generationConfig: {
@@ -28,7 +28,6 @@ export async function ghostChat(history: ChatMessage[]): Promise<string> {
       },
     });
 
-    // ✅ result.response.text() is directly available
     const text = result.response.text();
 
     return text || "👻 I’m GhostAI — but I couldn’t quite catch that.";

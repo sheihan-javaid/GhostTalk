@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -17,6 +17,7 @@ export default function GhostAiChat() {
     const [history, setHistory] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         async function fetchGreeting() {
@@ -33,11 +34,18 @@ export default function GhostAiChat() {
         fetchGreeting();
     }, []);
 
+    useEffect(() => {
+        if (scrollAreaRef.current) {
+            scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+        }
+    }, [history, isLoading]);
+
     const handleSend = async () => {
         if (!input.trim()) return;
 
         const currentUserMessage: ChatMessage = { role: 'user', content: [input] };
         const newHistory: ChatMessage[] = [...history, currentUserMessage];
+        
         setHistory(newHistory);
         setInput('');
         setIsLoading(true);
@@ -60,7 +68,7 @@ export default function GhostAiChat() {
                 <h1 className="text-3xl font-bold flex items-center justify-center gap-2"><Bot className="h-8 w-8 text-accent"/> Ghost AI</h1>
                 <p className="text-muted-foreground">A private, ephemeral chatbot. Your conversation is not stored.</p>
             </div>
-            <ScrollArea className="flex-1 mb-4 p-4 border rounded-lg bg-secondary/30">
+            <ScrollArea className="flex-1 mb-4 p-4 border rounded-lg bg-secondary/30" ref={scrollAreaRef}>
                 <div className="space-y-4">
                     {history.map((msg, index) => (
                         <div key={index} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
