@@ -4,31 +4,31 @@ service cloud.firestore {
 
     // Chat rooms collection
     match /chatRooms/{roomId} {
-      // Anyone (even anonymous/custom auth) can read chat room metadata
+
+      // Anyone can read or list chat room metadata
       allow read, list: if true;
 
-      // Only authenticated users can create new chat rooms
+      // Only authenticated users can create chat rooms
       allow create: if request.auth != null;
 
-      // Authenticated users can update a room (e.g., public keys for E2EE)
+      // Allow updating only for adding public keys (E2EE)
       allow update: if request.auth != null
                     && request.resource.data.diff(resource.data)
                     .affectedKeys().hasOnly(['publicKeys']);
 
-      // No one can delete a chat room
+      // Prevent deletion
       allow delete: if false;
 
       // Messages subcollection
       match /messages/{messageId} {
 
-        // Authenticated users can create messages
+        // Authenticated users can read and list messages inside any room
+        allow read, list, get: if request.auth != null;
+
+        // Authenticated users can send messages
         allow create: if request.auth != null;
 
-        // Authenticated users can read messages in this room
-        // You can strengthen this later with room membership validation
-        allow read, list: if request.auth != null;
-
-        // Disable update or delete (handled by server-side TTL)
+        // Prevent manual modification or deletion
         allow update, delete: if false;
       }
     }
