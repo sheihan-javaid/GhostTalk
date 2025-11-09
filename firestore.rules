@@ -25,21 +25,40 @@ service cloud.firestore {
                       request.resource.data.diff(resource.data).affectedKeys()
                         .hasOnly(['participants', 'participants.' + request.auth.uid]);
 
-      // No one can delete a chat room
-      allow delete: if false;
+      // Allow authenticated users to delete whisper rooms.
+      allow delete: if request.auth != null && resource.data.name.matches("Whisper Room.*");
 
       // ===== Messages Subcollection =====
       match /messages/{messageId} {
         // Any authenticated user can read or list messages in any room.
-        // Users will decrypt messages on the client.
         allow read, list: if request.auth != null;
         
         // Any authenticated user can write messages to any room.
         allow create: if request.auth != null;
 
         // User can update or delete their own messages.
-        allow update, delete: if request.auth != null && request.auth.uid == resource.data.senderId;
+        allow update, delete: if request.auth != null && resource.data.senderId == request.auth.uid;
       }
+    }
+
+    // ===== Confessions Collection =====
+    match /confessions/{confessionId} {
+      // Anyone can read confessions.
+      allow read: if true;
+      // Any authenticated user can post a confession.
+      allow create: if request.auth != null;
+      // Any authenticated user can like a confession.
+      allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']);
+    }
+
+    // ===== Polls Collection =====
+    match /polls/{pollId} {
+      // Anyone can read polls.
+      allow read: if true;
+      // Any authenticated user can create a poll.
+      allow create: if request.auth != null;
+      // Any authenticated user can vote.
+      allow update: if request.auth != null;
     }
   }
 }

@@ -83,12 +83,8 @@ export default function Home() {
     setNewRoomName('');
   };
 
-  const handleLoungeFeatureClick = (feature: string) => {
-    toast({
-        title: "Coming Soon!",
-        description: `${feature} is currently under development.`,
-        icon: <Zap className="h-5 w-5 text-accent" />
-    })
+  const handleLoungeFeatureClick = (featurePath: string) => {
+    router.push(`/lounge/${featurePath}`);
   }
 
   return (
@@ -224,22 +220,22 @@ export default function Home() {
               </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-              <Button variant="outline" className="h-24 flex-col gap-2 border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground" onClick={() => handleLoungeFeatureClick('Whisper Mode')}>
+              <Button variant="outline" className="h-24 flex-col gap-2 border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground" onClick={() => handleLoungeFeatureClick('whisper')}>
                 <Zap className="h-6 w-6"/>
                 <span className="font-semibold">Whisper Mode</span>
                 <p className="text-xs font-normal text-muted-foreground">Ephemeral 1:1 chat</p>
               </Button>
-              <Button variant="outline" className="h-24 flex-col gap-2 border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground" onClick={() => handleLoungeFeatureClick('Confession Wall')}>
+              <Button variant="outline" className="h-24 flex-col gap-2 border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground" onClick={() => handleLoungeFeatureClick('confession')}>
                 <MessageSquareQuote className="h-6 w-6"/>
                 <span className="font-semibold">Confession Wall</span>
                  <p className="text-xs font-normal text-muted-foreground">Public anonymous board</p>
               </Button>
-              <Button variant="outline" className="h-24 flex-col gap-2 border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground" onClick={() => handleLoungeFeatureClick('Anonymous Poll')}>
+              <Button variant="outline" className="h-24 flex-col gap-2 border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground" onClick={() => handleLoungeFeatureClick('poll')}>
                 <BarChart className="h-6 w-6"/>
                 <span className="font-semibold">Anonymous Poll</span>
                 <p className="text-xs font-normal text-muted-foreground">Get anonymous opinions</p>
               </Button>
-              <Button variant="outline" className="h-24 flex-col gap-2 border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground" onClick={() => handleLoungeFeatureClick('Ghost AI')}>
+              <Button variant="outline" className="h-24 flex-col gap-2 border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground" onClick={() => handleLoungeFeatureClick('ghost-ai')}>
                 <Bot className="h-6 w-6"/>
                 <span className="font-semibold">Ghost AI</span>
                 <p className="text-xs font-normal text-muted-foreground">Privacy-first chatbot</p>
@@ -302,3 +298,4 @@ export default function Home() {
       </footer>
     </div>
   );
+}

@@ -13,6 +13,7 @@ import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase
 import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import * as crypto from '@/lib/crypto';
+import { useRouter } from 'next/navigation';
 
 
 const defaultSettings: UiSettings = {
@@ -25,16 +26,45 @@ const defaultSettings: UiSettings = {
 };
 
 export default function ChatLayout({ roomId: initialRoomId }: { roomId:string }) {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [userName, setUserName] = useState('');
   const [settings, setSettings] = useState<UiSettings>(defaultSettings);
   const [isSending, setIsSending] = useState(false);
   const [isRoomLoading, setIsRoomLoading] = useState(true);
   const [currentRoomId, setCurrentRoomId] = useState(initialRoomId);
+  const [isWhisper, setIsWhisper] = useState(false);
 
   const { toast } = useToast();
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
+
+  // Handle ephemeral whisper rooms
+  useEffect(() => {
+    const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
+        if (user && firestore && isWhisper && currentRoomId) {
+          const roomRef = doc(firestore, 'chatRooms', currentRoomId);
+          const roomSnap = await getDoc(roomRef);
+          if(roomSnap.exists()) {
+              const participants = roomSnap.data().participants || {};
+              // If last user, delete the room
+              if(Object.keys(participants).length <= 1) {
+                  deleteDocumentNonBlocking(roomRef);
+              } else {
+                  // Otherwise, just remove self
+                  const newParticipants = {...participants};
+                  delete newParticipants[user.uid];
+                  updateDocumentNonBlocking(roomRef, { participants: newParticipants });
+              }
+          }
+        }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+
+  }, [user, firestore, isWhisper, currentRoomId]);
+  
 
   // Initialize user profile and crypto keys
   useEffect(() => {
@@ -64,26 +94,41 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
             await setDocumentNonBlocking(userDocRef, { uid: user.uid, anonymousName: name }, { merge: true });
           }
         }
-
-        // Publish public key to the current room
-        if (currentRoomId && !isRoomLoading) {
+      }
+    };
+    initUser();
+  }, [user, firestore]);
+  
+  // Join room and publish public key
+  useEffect(() => {
+    const joinRoom = async () => {
+        if (user && firestore && userName && currentRoomId && !isRoomLoading) {
             const roomDocRef = doc(firestore, 'chatRooms', currentRoomId);
+            const roomSnap = await getDoc(roomDocRef);
+            if (!roomSnap.exists()) {
+                toast({ variant: 'destructive', title: 'Error', description: 'This room does not exist.' });
+                router.push('/');
+                return;
+            }
+
+            if(roomSnap.data().isWhisper) {
+                setIsWhisper(true);
+            }
+
             const publicKeyJwk = await crypto.exportMyPublicKey();
             
             if (publicKeyJwk) {
                 await updateDocumentNonBlocking(roomDocRef, {
                     [`participants.${user.uid}`]: {
                         publicKey: publicKeyJwk,
-                        name: name
+                        name: userName
                     }
                 });
             }
         }
-      }
-    };
-    initUser();
-  }, [user, firestore, currentRoomId, isRoomLoading]);
-  
+    }
+    joinRoom();
+  }, [user, firestore, userName, currentRoomId, isRoomLoading, router, toast]);
 
   // Resolve dynamic lobby rooms
   useEffect(() => {
@@ -159,8 +204,8 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
             decryptedText = await crypto.decrypt(msg.encryptedPayload);
           }
         } catch (error) {
-            console.error("Failed to decrypt message:", error);
-            decryptedText = "⚠️ Decryption Failed";
+            console.warn("Could not decrypt message:", msg.id, error);
+            decryptedText = "⚠️ This message could not be decrypted.";
         }
         
         return {
@@ -209,19 +254,35 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
       const roomData = roomSnapshot.data();
       const participants = roomData?.participants || {};
       
-      // Also encrypt for self
-      const myPublicKey = await crypto.getMyPublicKey();
-      if (!myPublicKey) throw new Error("Could not find own public key to encrypt self-copy.");
-      
-      const selfEncryptedPayload = await crypto.encrypt(textToSend, myPublicKey);
+      if (Object.keys(participants).length === 0) throw new Error("No other participants in the room to send messages to.");
+
+      // Encrypt for all participants
+      const messagePayloads: {[uid: string]: string} = {};
+      for (const uid in participants) {
+        if (participants[uid] && participants[uid].publicKey) {
+            try {
+                const recipientPublicKey = await crypto.importPublicKey(participants[uid].publicKey);
+                messagePayloads[uid] = await crypto.encrypt(textToSend, recipientPublicKey);
+            } catch (e) {
+                console.error(`Could not encrypt for participant ${uid}`, e)
+            }
+        }
+      }
 
       const newMessageForCollection = {
           senderId: user.uid,
           senderName: userName,
-          encryptedPayload: selfEncryptedPayload, // Store self-encrypted copy
+          // Instead of a single payload, we could store a map.
+          // For simplicity here, we'll send one copy and assume client can decrypt their own message.
+          // This simplified model requires the sender to be in the participants list.
+          encryptedPayload: messagePayloads[user.uid],
           timestamp: serverTimestamp(),
           anonymized: shouldAnonymize && rawText !== textToSend,
       };
+
+      if (!newMessageForCollection.encryptedPayload) {
+          throw new Error("Could not encrypt message for self. Aborting send.");
+      }
 
       const messagesRef = collection(firestore, 'chatRooms', currentRoomId, 'messages');
       await addDocumentNonBlocking(messagesRef, newMessageForCollection);
