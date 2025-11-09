@@ -21,6 +21,7 @@ function str2ab(str: string): ArrayBuffer {
  * 3. Use the shared secret to derive a symmetric encryption key (AES-GCM).
  * 4. Encrypt the plaintext with the AES-GCM key.
  * 5. Package the ephemeral public key, the IV, and the ciphertext together.
+ * 6. CRITICAL: Base64-encode the entire JSON package to prevent corruption.
  */
 export async function encrypt(text: string, recipientPublicKey: CryptoKey): Promise<string> {
   const textEncoder = new TextEncoder();
@@ -54,25 +55,30 @@ export async function encrypt(text: string, recipientPublicKey: CryptoKey): Prom
   const ephemeralPublicKeyJwk = await crypto.subtle.exportKey('jwk', ephemeralKeyPair.publicKey);
   
   const packaged = {
-    ephemPubKey: ephemeralPublicKeyJwk, // Assign the object directly
+    ephemPubKey: ephemeralPublicKeyJwk,
     iv: ab2str(iv),
     ct: ab2str(ciphertext),
   };
 
-  // The entire package is stringified once here.
-  return JSON.stringify(packaged);
+  // 5. Stringify the package and then Base64 encode it for safe transport.
+  const packageString = JSON.stringify(packaged);
+  return Buffer.from(packageString).toString('base64');
 }
 
 
 /**
- * Decrypts a packaged ciphertext using the user's private key and the sender's ephemeral public key.
- * 1. Unpack the ephemeral public key, IV, and ciphertext.
- * 2. Import the ephemeral public key.
- * 3. Derive the same shared secret using our private key and the sender's ephemeral public key.
- * 4. Use the shared secret to derive the symmetric key.
- * 5. Decrypt the ciphertext.
+ * Decrypts a packaged ciphertext using the user's private key.
+ * 1. CRITICAL: Base64-decode the incoming package string.
+ * 2. Unpack the ephemeral public key, IV, and ciphertext.
+ * 3. Import the ephemeral public key.
+ * 4. Derive the same shared secret using our private key and the sender's ephemeral public key.
+ * 5. Use the shared secret to derive the symmetric key.
+ * 6. Decrypt the ciphertext.
  */
-export async function decrypt(encryptedPackage: string): Promise<string> {
+export async function decrypt(encryptedPackageB64: string): Promise<string> {
+  // 1. Base64-decode the incoming string to get the original JSON string.
+  const encryptedPackage = Buffer.from(encryptedPackageB64, 'base64').toString('utf8');
+
   const packaged = JSON.parse(encryptedPackage);
   const myPrivateKey = await getMyPrivateKey();
 
@@ -80,7 +86,7 @@ export async function decrypt(encryptedPackage: string): Promise<string> {
     throw new Error("Private key not found. Cannot decrypt.");
   }
   
-  // 1. Unpack
+  // 2. Unpack
   const { ephemPubKey, iv, ct } = packaged;
   
   if (!ephemPubKey || typeof ephemPubKey !== 'object' || !ephemPubKey.kty) {
@@ -90,7 +96,7 @@ export async function decrypt(encryptedPackage: string): Promise<string> {
   const ivAb = str2ab(iv);
   const ciphertextAb = str2ab(ct);
 
-  // 2. Import ephemeral public key
+  // 3. Import ephemeral public key
   const senderEphemeralPublicKey = await crypto.subtle.importKey(
     'jwk',
     ephemPubKey,
@@ -99,7 +105,7 @@ export async function decrypt(encryptedPackage: string): Promise<string> {
     []
   );
 
-  // 3. Derive shared secret
+  // 4. Derive shared secret
   const sharedSecret = await crypto.subtle.deriveKey(
     { name: 'ECDH', public: senderEphemeralPublicKey },
     myPrivateKey,
@@ -108,7 +114,7 @@ export async function decrypt(encryptedPackage: string): Promise<string> {
     ['encrypt', 'decrypt']
   );
   
-  // 4. Decrypt
+  // 5. Decrypt
   const decryptedAb = await crypto.subtle.decrypt(
     { name: 'AES-GCM', iv: ivAb },
     sharedSecret,
@@ -118,4 +124,3 @@ export async function decrypt(encryptedPackage: string): Promise<string> {
   const textDecoder = new TextDecoder();
   return textDecoder.decode(decryptedAb);
 }
-
