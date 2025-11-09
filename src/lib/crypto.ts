@@ -1,3 +1,6 @@
+
+'use client';
+
 import { getMyPrivateKey } from './e2ee';
 
 // Helper function to convert ArrayBuffer to Base64
@@ -12,7 +15,7 @@ function str2ab(str: string): ArrayBuffer {
 
 /**
  * Encrypts a plaintext message for a recipient using their public key.
- * This uses a standard ECIES-like approach (Elliptic Curve Integrated Encryption Scheme).
+ * This uses an ECIES-like approach (Elliptic Curve Integrated Encryption Scheme).
  * 1. Generate a temporary (ephemeral) key pair for this encryption session.
  * 2. Derive a shared secret using our ephemeral private key and the recipient's public key (ECDH).
  * 3. Use the shared secret to derive a symmetric encryption key (AES-GCM).
@@ -23,45 +26,52 @@ export async function encrypt(text: string, recipientPublicKey: CryptoKey): Prom
   const textEncoder = new TextEncoder();
   const encodedText = textEncoder.encode(text);
 
-  // 1. Derive shared secret from recipient's public key and our own private key
-  const myPrivateKey = await getMyPrivateKey();
-  if (!myPrivateKey) {
-    throw new Error("Private key not found. Cannot encrypt.");
-  }
+  // 1. Generate ephemeral key pair
+  const ephemeralKeyPair = await crypto.subtle.generateKey(
+    { name: 'ECDH', namedCurve: 'P-256' },
+    true,
+    ['deriveKey']
+  );
 
+  // 2. Derive shared secret
   const sharedSecret = await crypto.subtle.deriveKey(
     { name: 'ECDH', public: recipientPublicKey },
-    myPrivateKey,
+    ephemeralKeyPair.privateKey,
     { name: 'AES-GCM', length: 256 },
     true,
     ['encrypt', 'decrypt']
   );
 
-  // 2. Encrypt the message
-  const iv = crypto.getRandomValues(new Uint8Array(12)); // AES-GCM optimal IV size
+  // 3. Encrypt the message
+  const iv = crypto.getRandomValues(new Uint8Array(12));
   const ciphertext = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv: iv },
     sharedSecret,
     encodedText
   );
+
+  // 4. Export ephemeral public key and package everything
+  const ephemeralPublicKeyJwk = await crypto.subtle.exportKey('jwk', ephemeralKeyPair.publicKey);
   
-  // 3. Package and Base64 encode for transport
   const packaged = {
+    ephemPubKey: ephemeralPublicKeyJwk,
     iv: ab2str(iv),
-    ct: ab2str(ciphertext), // Ciphertext
+    ct: ab2str(ciphertext),
   };
 
   return JSON.stringify(packaged);
 }
 
+
 /**
- * Decrypts a packaged ciphertext using the user's private key and the sender's public key.
- * 1. Unpack the IV and ciphertext.
- * 2. Derive the same shared secret using our private key and the sender's public key.
- * 3. Use the shared secret to derive the symmetric key.
- * 4. Decrypt the ciphertext.
+ * Decrypts a packaged ciphertext using the user's private key and the sender's ephemeral public key.
+ * 1. Unpack the ephemeral public key, IV, and ciphertext.
+ * 2. Import the ephemeral public key.
+ * 3. Derive the same shared secret using our private key and the sender's ephemeral public key.
+ * 4. Use the shared secret to derive the symmetric key.
+ * 5. Decrypt the ciphertext.
  */
-export async function decrypt(encryptedPackage: string, senderPublicKey: CryptoKey): Promise<string> {
+export async function decrypt(encryptedPackage: string): Promise<string> {
   const packaged = JSON.parse(encryptedPackage);
   const myPrivateKey = await getMyPrivateKey();
 
@@ -70,20 +80,29 @@ export async function decrypt(encryptedPackage: string, senderPublicKey: CryptoK
   }
   
   // 1. Unpack
-  const { iv, ct } = packaged;
+  const { ephemPubKey, iv, ct } = packaged;
   const ivAb = str2ab(iv);
   const ciphertextAb = str2ab(ct);
 
-  // 2. Derive shared secret
+  // 2. Import ephemeral public key
+  const senderEphemeralPublicKey = await crypto.subtle.importKey(
+    'jwk',
+    ephemPubKey,
+    { name: 'ECDH', namedCurve: 'P-256' },
+    true,
+    []
+  );
+
+  // 3. Derive shared secret
   const sharedSecret = await crypto.subtle.deriveKey(
-    { name: 'ECDH', public: senderPublicKey },
+    { name: 'ECDH', public: senderEphemeralPublicKey },
     myPrivateKey,
     { name: 'AES-GCM', length: 256 },
     true,
     ['encrypt', 'decrypt']
   );
   
-  // 3. Decrypt
+  // 4. Decrypt
   const decryptedAb = await crypto.subtle.decrypt(
     { name: 'AES-GCM', iv: ivAb },
     sharedSecret,
