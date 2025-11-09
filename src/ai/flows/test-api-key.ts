@@ -11,8 +11,8 @@ export async function testApiKey(): Promise<string> {
     // Initialize with the key
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
     
-    // Use a universally available, stable model
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    // Use a more modern and widely available model
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     
     const prompt = "Hello! If you can see this, respond with a single word: 'Success!'";
     
