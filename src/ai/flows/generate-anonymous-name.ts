@@ -11,7 +11,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateAnonymousNameOutputSchema = z.object({
-  name: z.string().describe('A single, creative, anonymous username with a dark humor, adult theme. Examples: ShadowStalker, ChaosWhisperer, MidnightPhantom.'),
+  name: z.string().describe('A single, creative, anonymous username with a dark, brutal, adult, and sexual humor theme. Examples: DeathJester, CrimsonTemptress, VoidGazer.'),
 });
 export type GenerateAnonymousNameOutput = z.infer<typeof GenerateAnonymousNameOutputSchema>;
 
@@ -24,7 +24,7 @@ const generateAnonymousNamePrompt = ai.definePrompt({
   name: 'generateAnonymousNamePrompt',
   output: {schema: GenerateAnonymousNameOutputSchema},
   prompt: `You are an AI that generates creative, anonymous usernames.
-  The usernames should have a dark humor, slightly adult, and mysterious theme.
+  The usernames must be dark, brutal, with adult and sexual humor themes.
   Generate a single username. Do not include any other text or explanation.
   `,
 });
