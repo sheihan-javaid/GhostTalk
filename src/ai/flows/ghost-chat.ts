@@ -74,7 +74,7 @@ export async function ghostChat(history: HistoryMessage[]): Promise<string> {
     // Initialize the model with system instruction
     // Using the correct model name format for Gemini API
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
+      model: 'gemini-pro',
       systemInstruction: GHOSTAI_SYSTEM_INSTRUCTION,
     });
 
