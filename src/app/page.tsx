@@ -15,7 +15,6 @@ import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import imageData from '@/lib/placeholder-images.json';
 import Link from 'next/link';
 
 const regions = [
@@ -36,8 +35,6 @@ export default function Home() {
   const { auth, firestore } = useFirebase();
   const { user } = useUser();
   const { toast } = useToast();
-
-  const qrCodeImage = imageData.placeholderImages.find(img => img.id === 'upi-qr-code');
 
   useEffect(() => {
     if (!user && auth) {
@@ -275,22 +272,17 @@ export default function Home() {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-4">
-                  {qrCodeImage && (
-                    <div className="relative w-64 h-64">
-                      <Image
-                        src={qrCodeImage.imageUrl}
-                        alt={qrCodeImage.description}
-                        fill
-                        className="object-contain"
-                        data-ai-hint={qrCodeImage.imageHint}
-                      />
-                    </div>
-                  )}
+                  <div className="p-4 bg-white rounded-lg">
+                    <svg width="200" height="200" viewBox="0 0 45 45" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+                      <path fill="#000" d="M0 0h7v7H0zM9 0h7v7H9zM18 0h7v7h-7zM29 0h7v7h-7zM38 0h7v7h-7zM0 9h7v7H0zM38 9h7v7h-7zM0 18h7v7H0zM38 18h7v7h-7zM0 29h7v7H0zM9 29h7v7H9zM20 29h7v7h-7zM38 29h7v7h-7zM0 38h7v7H0zM9 38h7v7H9zM18 38h7v7h-7zM29 38h7v7h-7zM20 9h7v7h-7zM9 18h7v7H9zM20 20h7v7h-7z"/>
+                    </svg>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Scan to donate anonymously</p>
                   <a
                     href="https://razorpay.me/@mohammadsheihanjavaid"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-mono text-accent underline hover:text-accent/80"
+                    className="font-mono text-accent underline hover:text-accent/80 text-center break-all"
                   >
                     ghost-talk@privacy
                   </a>
