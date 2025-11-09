@@ -10,7 +10,7 @@ import ChatHeader from './chat-header';
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Loader2, Lock } from 'lucide-react';
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp, updateDoc, getDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import * as crypto from '@/lib/crypto';
 import { useRouter } from 'next/navigation';
@@ -34,6 +34,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
   const [isRoomLoading, setIsRoomLoading] = useState(true);
   const [currentRoomId, setCurrentRoomId] = useState(initialRoomId);
   const [isWhisper, setIsWhisper] = useState(false);
+  const [isParticipant, setIsParticipant] = useState(false); // New state to track participation
 
   const { toast } = useToast();
   const { firestore } = useFirebase();
@@ -98,6 +99,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
                         name: userName
                     }
                 });
+                setIsParticipant(true); // Set participant status to true
             }
         }
     }
@@ -147,18 +149,18 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
   
   // Query messages for the current room
   const messagesQuery = useMemoFirebase(() => {
-    if (!firestore || !currentRoomId || isRoomLoading) return null;
+    if (!firestore || !currentRoomId || isRoomLoading || !isParticipant) return null; // Wait for participation
     return query(
       collection(firestore, 'chatRooms', currentRoomId, 'messages'),
       orderBy('timestamp', 'asc')
     );
-  }, [firestore, currentRoomId, isRoomLoading]);
+  }, [firestore, currentRoomId, isRoomLoading, isParticipant]); // Depend on isParticipant
 
   const { data: firestoreMessages } = useCollection<Omit<ChatMessage, 'id' | 'text'>>(messagesQuery);
   
   // Process and decrypt messages as they arrive
   useEffect(() => {
-    if (!firestoreMessages) return;
+    if (!firestoreMessages || !isParticipant) return; // Wait for participation
 
     const processMessages = async () => {
       const now = Date.now();
@@ -200,7 +202,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     };
 
     processMessages();
-  }, [firestoreMessages, settings.messageExpiry]);
+  }, [firestoreMessages, settings.messageExpiry, isParticipant]); // Depend on isParticipant
 
 
   const handleSendMessage = useCallback(async (rawText: string, shouldAnonymize: boolean) => {
@@ -348,11 +350,11 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
 
   }, [settings]);
 
-  if (isUserLoading || isRoomLoading || !userName) {
+  if (isUserLoading || isRoomLoading || !userName || !isParticipant) {
     return (
         <div className="flex flex-col h-screen bg-background items-center justify-center text-foreground">
             <Loader2 className="h-12 w-12 animate-spin text-accent" />
-            <p className="mt-4 text-lg">Initializing your session...</p>
+            <p className="mt-4 text-lg">{!isParticipant ? 'Performing secure handshake...' : 'Initializing your session...'}</p>
         </div>
     )
   }
