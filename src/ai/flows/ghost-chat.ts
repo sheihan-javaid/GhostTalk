@@ -7,7 +7,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import { Part } from 'genkit';
+import {Part} from 'genkit';
 
 interface HistoryMessage {
   role: 'user' | 'model';
@@ -17,7 +17,7 @@ interface HistoryMessage {
 export async function ghostChat(history: HistoryMessage[]): Promise<string> {
   const genkitHistory = history.map(msg => ({
     role: msg.role,
-    content: msg.content.map(c => Part.text(c))
+    content: msg.content.map(c => Part.text(c)),
   }));
 
   const response = await ai.generate({
