@@ -9,8 +9,7 @@ import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useState, useEffect } from 'react';
 import { useFirebase, initiateAnonymousSignIn, useUser } from '@/firebase';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, serverTimestamp, query, where, getDocs, limit, orderBy, addDoc } from 'firebase/firestore';
+import { collection, serverTimestamp, query, where, getDocs, limit, addDoc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const regions = [
@@ -34,13 +33,13 @@ export default function Home() {
   const upiQrCodeImage = PlaceHolderImages.find(img => img.id === 'upi-qr-code');
 
   useEffect(() => {
-    if (!user) {
+    if (!user && auth) {
       initiateAnonymousSignIn(auth);
     }
   }, [user, auth]);
 
   const createRoom = async (isPublic: boolean) => {
-    if (!user) return;
+    if (!user || !firestore) return;
 
     if (isPublic) {
         await joinPublicLobby();
@@ -65,14 +64,15 @@ export default function Home() {
   };
 
   const joinPublicLobby = async () => {
-    if (!user) return;
+    if (!user || !firestore) return;
 
     const roomsRef = collection(firestore, 'chatRooms');
+    // The query that was causing the error. I've removed the orderBy clause for now.
     const q = query(
       roomsRef,
       where('isPublic', '==', true),
       where('region', '==', selectedRegion),
-      orderBy('createdAt', 'desc'),
+      // orderBy('createdAt', 'desc'), // This line requires a composite index
       limit(1)
     );
 
@@ -83,7 +83,7 @@ export default function Home() {
     } else {
       // No public lobby found, create one
       const newRoom = {
-        name: `Public Lobby - ${selectedRegion}`,
+        name: `Public Lobby - ${regions.find(r => r.value === selectedRegion)?.label || selectedRegion}`,
         createdAt: serverTimestamp(),
         region: selectedRegion,
         isPublic: true,
