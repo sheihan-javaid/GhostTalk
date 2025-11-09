@@ -145,7 +145,7 @@ export default function Home() {
                <span className="text-2xl font-headline">Private Room</span>
             </CardTitle>
             <CardDescription>
-              Create a private, encrypted room and invite someone with a secret link.
+              Create a private room and invite someone with a secret link.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -157,8 +157,7 @@ export default function Home() {
         </Card>
         
         <Dialog>
-          <DialogTrigger asChild>
-            <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50 cursor-pointer md:col-span-2">
+            <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50 md:col-span-2">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-3">
                     <Ghost className="h-8 w-8 text-accent" />
@@ -169,12 +168,14 @@ export default function Home() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="w-full text-center font-semibold text-accent">
-                        Enter the Lounge <ArrowRight className="inline-block ml-2 h-5 w-5" />
-                    </div>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold">
+                            Enter the Lounge
+                            <ArrowRight className="ml-2 h-5 w-5" />
+                        </Button>
+                    </DialogTrigger>
                 </CardContent>
             </Card>
-          </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle className="text-2xl flex items-center gap-3">
