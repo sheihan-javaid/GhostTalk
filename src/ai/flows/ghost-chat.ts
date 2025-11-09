@@ -1,16 +1,26 @@
 'use server';
 
 /**
- * @fileOverview A Genkit flow for a simple, stateless AI chat.
+ * @fileOverview A Genkit flow for a simple, stateless AI chat using OpenRouter.
  *
  * - ghostChat - A function that returns a response from the AI.
  */
 
-import {ai} from '@/ai/genkit';
-import {Part, Role} from 'genkit';
+import {genkit} from 'genkit';
+import {openAI} from '@genkit-ai/openai';
+
+const ai = genkit({
+  plugins: [
+    openAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: 'https://openrouter.ai/api/v1',
+    }),
+  ],
+  model: 'openai/gpt-3.5-turbo',
+});
 
 interface HistoryMessage {
-  role: Role;
+  role: 'user' | 'model';
   content: string[];
 }
 
