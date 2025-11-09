@@ -8,12 +8,13 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {Part} from 'genkit';
 
 export async function ghostChat(history: Array<{role: 'user' | 'model'; content: string[]}>): Promise<string> {
     const response = await ai.generate({
         prompt: history.map(msg => ({
             role: msg.role,
-            content: msg.content.map(c => ({ text: c }))
+            content: msg.content.map(c => Part.text(c))
         })),
         config: {
             temperature: 0.8,
