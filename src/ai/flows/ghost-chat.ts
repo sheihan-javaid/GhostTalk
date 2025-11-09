@@ -1,6 +1,6 @@
 'use server';
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, Content } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
 
@@ -12,12 +12,17 @@ interface HistoryMessage {
 export async function ghostChat(history: HistoryMessage[]): Promise<string> {
   try {
     // Prepare chat history for Gemini
-    const formattedHistory = history.map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
+    const formattedHistory: Content[] = history.map(msg => ({
+      role: msg.role,
       parts: msg.content.map(text => ({ text })),
     }));
 
-    // Create a chat session
+    // For a chat session, we only need the history, not the last message separately.
+    const lastUserMessage = formattedHistory.pop();
+    if (!lastUserMessage) {
+        return 'Could not process your message.';
+    }
+
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const chat = model.startChat({
@@ -28,14 +33,11 @@ export async function ghostChat(history: HistoryMessage[]): Promise<string> {
       },
     });
 
-    // Get model reply
-    const lastUserMessage = history[history.length - 1]?.content?.join(' ') || '';
-    const response = await chat.sendMessage(lastUserMessage);
+    const result = await chat.sendMessage(lastUserMessage.parts);
+    const response = result.response;
+    const text = response.text();
 
-    // Extract the AI text safely
-    const reply = response.response.text();
-
-    return reply || '...';
+    return text || '...';
   } catch (err) {
     console.error('Ghost AI Error:', err);
     return 'Something went wrong 👻';
