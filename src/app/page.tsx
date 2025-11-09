@@ -20,17 +20,13 @@ const regions = [
   { value: 'oceania', label: 'Oceania' },
 ];
 
-const upiQrCodeImageUrl = "https://i.ibb.co/6rWd4Wf/qr-code.png";
-
 export default function Home() {
   const router = useRouter();
-  const [isUpiCopied, setIsUpiCopied] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState('north-america');
   
   const { auth, firestore } = useFirebase();
   const { user } = useUser();
 
-  const anonymousUpiId = 'ghost-talk@privacy';
 
   useEffect(() => {
     if (!user && auth) {
@@ -96,13 +92,6 @@ export default function Home() {
   
   const createPrivateRoom = () => createRoom(false, false);
   const createGroup = () => createRoom(false, true);
-
-  const copyUpiToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setIsUpiCopied(true);
-    setTimeout(() => setIsUpiCopied(false), 2000);
-  };
-
 
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen bg-background p-4 animate-in fade-in-0 duration-500">
@@ -221,22 +210,15 @@ export default function Home() {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-4">
-                    <Image 
-                        src={upiQrCodeImageUrl}
-                        alt="UPI QR code for anonymous donations"
-                        width={200}
-                        height={200}
-                        className="rounded-lg border-4 border-accent shadow-lg"
-                        data-ai-hint="qr code"
-                    />
-                    <p className="text-sm text-muted-foreground">Or copy the anonymous UPI ID below</p>
-                    <div className="flex w-full max-w-sm items-center gap-2 p-2 rounded-md bg-secondary">
-                        <input type="text" readOnly value={anonymousUpiId} className="flex-1 text-sm bg-transparent text-foreground truncate" />
-                        <Button size="icon" variant="ghost" onClick={() => copyUpiToClipboard(anonymousUpiId)} className="h-8 w-8 shrink-0">
-                        {isUpiCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-accent" />}
-                        <span className="sr-only">Copy UPI ID</span>
-                        </Button>
-                    </div>
+                    <p className="text-sm text-muted-foreground">You can support us anonymously via the link below:</p>
+                    <a 
+                        href="https://razorpay.me/@mohammadsheihanjavaid"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-accent underline hover:text-accent/80"
+                    >
+                        ghost-talk@privacy
+                    </a>
                 </div>
               </DialogContent>
             </Dialog>
