@@ -26,6 +26,8 @@ const regions = [
   { value: 'oceania', label: 'Oceania' },
 ];
 
+const qrCodeDataURL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADIAQMAAACXljzdAAAABlBMVEX///8AAABVwtN+AAABOklEQVRIie2WsQ3DMAxEDS+g/ZLVBOlknSLtexS5gH1I9qTOSwE8oBQgWPLf5fPZXC6Xy+VyuVxOAsC4yJNkFmKACgEjbLVmK+sy/QnQLbAbxAgwCzHQPQ50Lwdy79wB663+xbsvC9yN82tA4E2gB/y6iCMbA0FzIL/XyD8SOH9l//c/2JgJtAFg1qHlMGCso2wz+dgMGNUGvjAABm30DAd2DAaTZbLd2rVj5lbtADoGjBf85gLDaTQA5Qo/kQ8b3t/oP/vHgo9n4jZ2yTcojXjUfBmoB+P2Q2E+kL/4v43H41kAg+V8+f1RmWk2YIl4VLRdAZvYfD0uV6v9a456s9+7561YgAsG1I/r8f4AehABv1hswCRGgZl3v1B2b4gS2gWkn2/9P4Lnc7gYgLNxvAi+G9yEAlA+p335e+V7/bv9edP9/AHgi/wB3X0CIfPApD/gYgH/g/g04GIEfP+MD0wYixkfLP/jP5g4ExQWMYc0LlnnL02YAsQ37/wHqgMII2J2nWgMk2YIn4VLRdAXuhMswB61Y9GfK2pG/cAlA/o2/h/s1b8/gLdky9Q3p+w/F+wF/g/ABAAAK4G09gDyAAAAAElFTkSuQmCC";
+
 export default function Home() {
   const router = useRouter();
   const [selectedRegion, setSelectedRegion] = useState('asia');
@@ -273,9 +275,14 @@ export default function Home() {
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-4">
                   <div className="p-4 bg-white rounded-lg">
-                    <svg width="200" height="200" viewBox="0 0 45 45" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                      <path fill="#000" d="M0 0h7v7H0zM9 0h7v7H9zM18 0h7v7h-7zM29 0h7v7h-7zM38 0h7v7h-7zM0 9h7v7H0zM38 9h7v7h-7zM0 18h7v7H0zM38 18h7v7h-7zM0 29h7v7H0zM9 29h7v7H9zM20 29h7v7h-7zM38 29h7v7h-7zM0 38h7v7H0zM9 38h7v7H9zM18 38h7v7h-7zM29 38h7v7h-7zM20 9h7v7h-7zM9 18h7v7H9zM20 20h7v7h-7z"/>
-                    </svg>
+                    <div className="relative w-48 h-48">
+                      <Image
+                        src={qrCodeDataURL}
+                        alt="QR Code for anonymous donation"
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
                   </div>
                   <p className="text-sm text-muted-foreground">Scan to donate anonymously</p>
                   <a
