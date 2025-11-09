@@ -134,10 +134,12 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
   }, [roomRef, user, isKeysLoading]);
 
   const messagesQuery = useMemoFirebase(() => {
-    if (!currentRoomId || isRoomLoading || !firestore) return null;
-    const allMessages = query(collection(firestore, 'chatRooms', currentRoomId, 'messages'), orderBy('timestamp', 'asc'));
-    if (!user) return allMessages;
-    return query(allMessages, where('recipientId', '==', user.uid));
+    if (!firestore || !currentRoomId || isRoomLoading || !user) return null;
+    return query(
+      collection(firestore, 'chatRooms', currentRoomId, 'messages'),
+      where('recipientId', '==', user.uid),
+      orderBy('timestamp', 'asc')
+    );
   }, [firestore, currentRoomId, isRoomLoading, user]);
 
   const { data: firestoreMessages, isLoading: areMessagesLoading } = useCollection<Message>(messagesQuery);
