@@ -37,8 +37,8 @@ service cloud.firestore {
         // Any authenticated user can write messages to any room.
         allow create: if request.auth != null;
 
-        // Nobody can update or delete messages directly
-        allow update, delete: if false;
+        // User can update or delete their own messages.
+        allow update, delete: if request.auth != null && request.auth.uid == resource.data.senderId;
       }
     }
   }

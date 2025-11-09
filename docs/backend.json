@@ -36,6 +36,10 @@
         "anonymized": {
             "type": "boolean",
             "description": "Indicates if the original message content was altered by the AI."
+        },
+        "isEdited": {
+            "type": "boolean",
+            "description": "Indicates if the message has been edited."
         }
       },
       "required": ["senderId", "senderName", "encryptedPayload", "timestamp"]

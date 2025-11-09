@@ -8,6 +8,7 @@ export interface Message {
   username: string;
   timestamp: any | FieldValue;
   anonymized: boolean;
+  isEdited?: boolean;
 }
 
 // Represents the document stored in Firestore
@@ -17,6 +18,7 @@ export interface ChatMessage {
   encryptedPayload: string;
   timestamp: any | FieldValue;
   anonymized?: boolean;
+  isEdited?: boolean;
 }
 
 

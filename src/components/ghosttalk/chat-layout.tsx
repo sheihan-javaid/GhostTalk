@@ -10,8 +10,8 @@ import ChatHeader from './chat-header';
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Loader2, Lock } from 'lucide-react';
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp, updateDoc, getDoc } from 'firebase/firestore';
-import { addDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
+import { addDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import * as crypto from '@/lib/crypto';
 
 
@@ -170,6 +170,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
           username: msg.senderName,
           timestamp: msg.timestamp,
           anonymized: !!msg.anonymized,
+          isEdited: !!msg.isEdited,
         };
       });
 
@@ -207,38 +208,11 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
       const roomSnapshot = await getDoc(roomDocRef);
       const roomData = roomSnapshot.data();
       const participants = roomData?.participants || {};
-
-      for (const uid in participants) {
-        // Don't send to self for this E2EE model
-        if (uid === user.uid) continue; 
-        
-        const recipient = participants[uid];
-        if (recipient.publicKey) {
-            try {
-                const recipientPublicKey = await crypto.importPublicKey(recipient.publicKey);
-                const encryptedPayload = await crypto.encrypt(textToSend, recipientPublicKey);
-                
-                const newMessage = {
-                    senderId: user.uid,
-                    senderName: userName,
-                    encryptedPayload: encryptedPayload,
-                    timestamp: serverTimestamp(),
-                    anonymized: shouldAnonymize && rawText !== textToSend,
-                };
-                
-                // This logic is simplified: it just sends one copy of the message.
-                // In a real E2EE group chat, you'd send one encrypted copy per user.
-                // For this app, we'll send it to the main collection, and clients will filter.
-            } catch (e) {
-                console.error(`Failed to encrypt for user ${uid}`, e)
-            }
-        }
-      }
       
       // Also encrypt for self
       const myPublicKey = await crypto.getMyPublicKey();
       if (!myPublicKey) throw new Error("Could not find own public key to encrypt self-copy.");
-
+      
       const selfEncryptedPayload = await crypto.encrypt(textToSend, myPublicKey);
 
       const newMessageForCollection = {
@@ -263,6 +237,39 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
       setIsSending(false);
     }
   }, [isSending, user, userName, currentRoomId, toast, firestore]);
+
+  const handleDeleteMessage = useCallback(async (messageId: string) => {
+    if (!firestore || !currentRoomId) return;
+    const messageRef = doc(firestore, 'chatRooms', currentRoomId, 'messages', messageId);
+    await deleteDocumentNonBlocking(messageRef);
+  }, [firestore, currentRoomId]);
+
+  const handleEditMessage = useCallback(async (messageId: string, newText: string) => {
+    if (!firestore || !currentRoomId || !user) return;
+    setIsSending(true);
+    try {
+        const myPublicKey = await crypto.getMyPublicKey();
+        if (!myPublicKey) throw new Error("Could not find own public key to re-encrypt message.");
+
+        const selfEncryptedPayload = await crypto.encrypt(newText, myPublicKey);
+
+        const messageRef = doc(firestore, 'chatRooms', currentRoomId, 'messages', messageId);
+        await updateDocumentNonBlocking(messageRef, {
+            encryptedPayload: selfEncryptedPayload,
+            isEdited: true
+        });
+
+    } catch (error: any) {
+        console.error("Failed to edit message:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: error.message || "Could not edit message.",
+        });
+    } finally {
+        setIsSending(false);
+    }
+  }, [firestore, currentRoomId, user, toast]);
   
   const handleSettingsChange = (newSettings: Partial<UiSettings>) => {
     setSettings(prev => ({...prev, ...newSettings}));
@@ -320,7 +327,13 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
             <Lock className="h-3 w-3 text-green-500" />
             Messages are end-to-end encrypted. No one outside of this chat, not even GhostTalk, can read them.
         </div>
-        <MessageList messages={messages} currentUserId={user?.uid || ''} showUsername={settings.showUsername} />
+        <MessageList 
+            messages={messages} 
+            currentUserId={user?.uid || ''} 
+            showUsername={settings.showUsername}
+            onDeleteMessage={handleDeleteMessage}
+            onEditMessage={handleEditMessage}
+        />
       </div>
       <div className="p-4 md:p-6 border-t border-border bg-background/80 backdrop-blur-sm">
         <MessageInput onSendMessage={handleSendMessage} isSending={isSending} />
