@@ -2,7 +2,7 @@
 
 import { HfInference } from '@huggingface/inference';
 
-const hf = new HfInference(process.env.HUGGINGFACE_API_KEY, { endpoint: "https://api-inference.huggingface.co/models" });
+const hf = new HfInference(process.env.HUGGINGFACE_API_KEY, { endpoint: "https://router.huggingface.co/hf-inference" });
 
 export interface GenerateAnonymousNameOutput {
   name: string;
