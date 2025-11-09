@@ -30,11 +30,14 @@ service cloud.firestore {
 
       // ===== Messages Subcollection =====
       match /messages/{messageId} {
-        // Any authenticated user can read or list messages in any room.
-        allow read, list: if request.auth != null;
+        // A user can read messages only if they are a participant in the room.
+        allow read: if request.auth != null && get(/databases/$(database)/documents/chatRooms/$(roomId)).data.participants[request.auth.uid] != null;
+
+        // A user can list messages only if they are a participant in the room.
+        allow list: if request.auth != null && get(/databases/$(database)/documents/chatRooms/$(roomId)).data.participants[request.auth.uid] != null;
         
-        // Any authenticated user can write messages to any room.
-        allow create: if request.auth != null;
+        // A user can write messages only if they are a participant in the room.
+        allow create: if request.auth != null && get(/databases/$(database)/documents/chatRooms/$(roomId)).data.participants[request.auth.uid] != null;
 
         // User can update or delete their own messages.
         allow update, delete: if request.auth != null && resource.data.senderId == request.auth.uid;
