@@ -10,7 +10,6 @@ import { useState, useEffect } from 'react';
 import { useFirebase, initiateAnonymousSignIn, useUser } from '@/firebase';
 import { collection, serverTimestamp, query, where, getDocs, limit, addDoc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const regions = [
   { value: 'north-america', label: 'North America' },
@@ -27,8 +26,6 @@ export default function Home() {
   
   const { auth, firestore } = useFirebase();
   const { user } = useUser();
-  const upiQrCodeImage = PlaceHolderImages.find(img => img.id === 'upi-qr-code');
-
 
   useEffect(() => {
     if (!user && auth) {
@@ -212,14 +209,14 @@ export default function Home() {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-4">
-                    {upiQrCodeImage && <Image 
-                        src={upiQrCodeImage.imageUrl}
-                        alt={upiQrCodeImage.description}
+                    <Image 
+                        src="https://i.ibb.co/6rWd4Wf/qr-code.png"
+                        alt="UPI QR code for anonymous donations"
                         width={200}
                         height={200}
-                        data-ai-hint={upiQrCodeImage.imageHint}
+                        data-ai-hint="qr code"
                         className="rounded-md"
-                    />}
+                    />
                     <p className="text-sm text-muted-foreground">You can support us anonymously via the link below:</p>
                     <a 
                         href="https://razorpay.me/@mohammadsheihanjavaid"
@@ -241,4 +238,5 @@ export default function Home() {
       </footer>
     </div>
   );
-}
+
+    
