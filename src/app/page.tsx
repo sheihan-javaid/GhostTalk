@@ -157,25 +157,25 @@ export default function Home() {
         </Card>
         
         <Dialog>
-            <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50 md:col-span-2">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-3">
-                    <Ghost className="h-8 w-8 text-accent" />
-                    <span className="text-2xl font-headline">Ghost Lounge</span>
-                    </CardTitle>
-                    <CardDescription>
-                        Explore experimental, privacy-focused chat modes.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <DialogTrigger asChild>
-                        <Button variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold">
-                            Enter the Lounge
-                            <ArrowRight className="ml-2 h-5 w-5" />
-                        </Button>
-                    </DialogTrigger>
-                </CardContent>
-            </Card>
+          <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <Ghost className="h-8 w-8 text-accent" />
+                <span className="text-2xl font-headline">Ghost Lounge</span>
+              </CardTitle>
+              <CardDescription>
+                Explore experimental, privacy-focused chat modes.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold">
+                  Enter the Lounge
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </DialogTrigger>
+            </CardContent>
+          </Card>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle className="text-2xl flex items-center gap-3">
