@@ -1,14 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Ghost, Users, ArrowRight, Link as LinkIcon } from 'lucide-react';
+import { Ghost, Users, ArrowRight, Link as LinkIcon, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function Home() {
   const router = useRouter();
 
-  const createPrivateRoom = () => {
+  const createRoom = () => {
     const roomId = crypto.randomUUID();
     router.push(`/chat/${roomId}`);
   };
@@ -33,7 +33,7 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-6xl">
         <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
@@ -59,12 +59,30 @@ export default function Home() {
                <span className="text-2xl font-headline">Private Room</span>
             </CardTitle>
             <CardDescription>
-              Create a private, encrypted room and invite others with a secret link.
+              Create a private, encrypted room and invite someone with a secret link.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={createPrivateRoom} variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold">
+            <Button onClick={createRoom} variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold">
               Create a Private Room
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+               <UserPlus className="h-8 w-8 text-accent" />
+               <span className="text-2xl font-headline">Create Group</span>
+            </CardTitle>
+            <CardDescription>
+              Create a private group and invite multiple people with a secret link.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={createRoom} variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold">
+              Create a Group
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </CardContent>

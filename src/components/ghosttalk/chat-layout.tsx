@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { anonymizeMessage } from '@/ai/flows/anonymize-message-metadata';
+import { generateAnonymousName } from '@/ai/flows/generate-anonymous-name';
 import { useFileEncryption } from '@/hooks/use-file-encryption';
 import type { Message } from '@/lib/types';
 import MessageList from './message-list';
@@ -10,24 +11,41 @@ import ChatHeader from './chat-header';
 import { useToast } from "@/hooks/use-toast";
 
 const GHOST_USER_ID = 'ghost-user';
-const GHOST_USER_NAME = 'A fellow Ghost';
 
 export default function ChatLayout({ roomId }: { roomId: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [userId, setUserId] = useState('');
   const [userName, setUserName] = useState('');
+  const [ghostName, setGhostName] = useState('A fellow Ghost');
   const [messageExpiry, setMessageExpiry] = useState<number>(300); // 5 minutes in seconds
   const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
   const { encryptFile, decryptFile } = useFileEncryption();
 
   useEffect(() => {
-    // Generate a temporary, session-only user identity.
-    setUserId('user-' + crypto.randomUUID().slice(0, 8));
-    setUserName('User' + Math.floor(Math.random() * 9000 + 1000));
+    // Generate a temporary, session-only user identity and AI-generated name
+    const initializeUser = async () => {
+      setUserId('user-' + crypto.randomUUID().slice(0, 8));
+      try {
+        const aiName = await generateAnonymousName();
+        setUserName(aiName.name);
+        const ghostAiName = await generateAnonymousName();
+        setGhostName(ghostAiName.name);
+      } catch (error) {
+        console.error("Failed to generate anonymous name:", error);
+        setUserName('User' + Math.floor(Math.random() * 9000 + 1000));
+        setGhostName('A fellow Ghost');
+      }
+    };
     
-    // Simulate initial welcome message from another user
+    initializeUser();
+  }, [roomId]);
+  
+  useEffect(() => {
+    // Simulate initial welcome message from another user, only if a username is set
     async function showWelcomeMessage() {
+      if (!userName) return;
+
       const welcomeText = `Welcome to room ${roomId === 'random-lobby' ? 'Random Lobby' : 'privée'}. Remember, what is said in the shadows, stays in the shadows.`;
       
       const welcomeMessage: Message = {
@@ -35,7 +53,7 @@ export default function ChatLayout({ roomId }: { roomId: string }) {
         text: welcomeText,
         encryptedText: '',
         userId: GHOST_USER_ID,
-        username: GHOST_USER_NAME,
+        username: ghostName,
         timestamp: Date.now(),
         anonymized: false,
       };
@@ -43,7 +61,7 @@ export default function ChatLayout({ roomId }: { roomId: string }) {
     }
     showWelcomeMessage();
 
-  }, [roomId]);
+  }, [roomId, userName, ghostName]);
 
   // Message Expiry Logic
   useEffect(() => {
@@ -104,7 +122,7 @@ export default function ChatLayout({ roomId }: { roomId: string }) {
           text: replyText,
           encryptedText: '',
           userId: GHOST_USER_ID,
-          username: GHOST_USER_NAME,
+          username: ghostName,
           timestamp: Date.now(),
           anonymized: false,
         };
@@ -122,7 +140,7 @@ export default function ChatLayout({ roomId }: { roomId: string }) {
     } finally {
       setIsSending(false);
     }
-  }, [isSending, userId, userName, toast, encryptFile]);
+  }, [isSending, userId, userName, toast, encryptFile, ghostName]);
   
 
   return (

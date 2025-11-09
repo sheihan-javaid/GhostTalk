@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Message } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Shield, User, Paperclip, Download } from 'lucide-react';
@@ -21,7 +21,13 @@ function MessageItem({ message, isCurrentUser }: { message: Message, isCurrentUs
   const formattedTime = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className={`flex w-full flex-col gap-2 ${alignClass} animate-in fade-in-0 slide-in-from-bottom-4 duration-300`}>
+    <div 
+      className={cn(
+        'flex w-full flex-col gap-2', 
+        alignClass, 
+        'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-4 duration-500'
+      )}
+    >
       <div className="flex items-center gap-2">
         {!isCurrentUser && (
             <Avatar className="h-6 w-6">
@@ -32,7 +38,12 @@ function MessageItem({ message, isCurrentUser }: { message: Message, isCurrentUs
         )}
         <span className="text-xs text-muted-foreground">{!isCurrentUser ? message.username : 'You'}</span>
       </div>
-      <div className={cn("max-w-xs md:max-w-md lg:max-w-2xl p-3 rounded-xl shadow-md", bubbleClass)}>
+      <div className={cn(
+          "max-w-xs md:max-w-md lg:max-w-2xl p-3 rounded-xl shadow-md transform transition-all duration-300", 
+          bubbleClass,
+          isCurrentUser ? 'motion-safe:hover:-translate-x-1' : 'motion-safe:hover:translate-x-1'
+        )}
+      >
         {message.text && <p className="text-sm break-words">{message.text}</p>}
         {message.file && (
           <div className="mt-2">
@@ -107,7 +118,7 @@ export default function MessageList({ messages, currentUserId }: MessageListProp
   }, [messages]);
 
   return (
-    <div ref={scrollRef} className="h-full space-y-6 overflow-y-auto px-4">
+    <div ref={scrollRef} className="h-full space-y-6 overflow-y-auto p-4">
       {messages.map(message => (
         <MessageItem
           key={message.id}
