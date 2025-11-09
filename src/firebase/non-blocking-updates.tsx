@@ -5,7 +5,9 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  collection,
   CollectionReference,
+  doc,
   DocumentReference,
   SetOptions,
 } from 'firebase/firestore';
@@ -59,6 +61,8 @@ export function addDocumentNonBlocking(colRef: CollectionReference, data: any): 
  * Does NOT await the write operation internally.
  */
 export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) {
+  // We are NOT awaiting this promise. The UI will update optimistically.
+  // The .catch handles any permission errors, which will be surfaced globally.
   updateDoc(docRef, data)
     .catch(error => {
       errorEmitter.emit(

@@ -3,14 +3,16 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirebase, useUser } from '@/firebase';
-import { collection, serverTimestamp } from 'firebase/firestore';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection, serverTimestamp, doc } from 'firebase/firestore';
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Copy, Check, Link as LinkIcon, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import * as crypto from '@/lib/crypto';
+
 
 export default function WhisperPage() {
   const router = useRouter();
@@ -34,11 +36,29 @@ export default function WhisperPage() {
     };
 
     try {
+      // 1. Create the room document
       const docRef = await addDocumentNonBlocking(collection(firestore, 'chatRooms'), newRoomData);
       if (docRef) {
+        // 2. Add self as a participant
+        const publicKeyJwk = await crypto.exportMyPublicKey();
+        const userDoc = await getDoc(doc(firestore, 'users', user.uid));
+        const userName = userDoc.data()?.anonymousName || 'Anonymous';
+
+        if (publicKeyJwk) {
+          // This update is non-blocking in terms of UI, but we await it here to ensure the creator is in before generating the link.
+          await updateDoc(docRef, {
+            [`participants.${user.uid}`]: {
+              publicKey: publicKeyJwk,
+              name: userName,
+            },
+          });
+        }
+        
+        // 3. Only now, set the link
         setWhisperLink(`${window.location.origin}/chat/${docRef.id}`);
       }
     } catch (error) {
+      console.error("Whisper room creation error:", error);
       toast({
         variant: "destructive",
         title: "Error",

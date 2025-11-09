@@ -49,12 +49,12 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
               const participants = roomSnap.data().participants || {};
               // If last user, delete the room
               if(Object.keys(participants).length <= 1) {
-                  deleteDocumentNonBlocking(roomRef);
+                  await deleteDoc(roomRef);
               } else {
                   // Otherwise, just remove self
                   const newParticipants = {...participants};
                   delete newParticipants[user.uid];
-                  updateDocumentNonBlocking(roomRef, { participants: newParticipants });
+                  await updateDoc(roomRef, { participants: newParticipants });
               }
           }
         }
