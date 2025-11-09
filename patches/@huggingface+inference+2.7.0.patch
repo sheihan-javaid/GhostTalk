@@ -1,13 +1,12 @@
-diff --git a/node_modules/@huggingface/inference/src/lib/server-utils.ts b/node_modules/@huggingface/inference/src/lib/server-utils.ts
-index 7254881..30d5071 100644
---- a/node_modules/@huggingface/inference/src/lib/server-utils.ts
-+++ b/node_modules/@huggingface/inference/src/lib/server-utils.ts
-@@ -10,7 +10,7 @@
-  * The default inference endpoint
-  */
- export const INFERENCE_ENDPOINT =
--	process.env["HF_INFERENCE_ENDPOINT"] ?? "https://api-inference.huggingface.co";
-+	process.env["HF_INFERENCE_ENDPOINT"] ?? "https://api-inference.huggingface.co/models";
+patch-package
+--- a/node_modules/@huggingface/inference/src/utils/getEndpoint.ts
++++ b/node_modules/@huggingface/inference/src/utils/getEndpoint.ts
+@@ -23,7 +23,7 @@
+ 		? request.model
+ 		: (request as any).repo_id;
  
- export const INFERENCE_URL = `${INFERENCE_ENDPOINT}/pipeline`;
+-	const endpoint = `https://api-inference.huggingface.co/${type}/${model}`;
++	const endpoint = `https://router.huggingface.co/hf-inference/${type}/${model}`;
  
+ 	if (type === "models" && !endpoint.startsWith("https://api-inference.huggingface.co/models/")) {
+ 		// prevent security issue
