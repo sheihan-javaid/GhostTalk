@@ -12,8 +12,7 @@ import { Sparkles, Loader2, KeyRound } from 'lucide-react';
 import { useFirebase, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp } from 'firebase/firestore';
 import { addDocumentNonBlocking, updateDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { decrypt, encrypt } from '@/lib/crypto';
-import { getMyPublicKey, initializeKeys, importPublicKey } from '@/lib/e2ee';
+import { decrypt, encrypt, getMyPublicKey, importPublicKey, initializeKeyPair } from '@/lib/crypto';
 
 const defaultSettings: UiSettings = {
   messageExpiry: 0,
@@ -42,7 +41,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     const initUser = async () => {
       if (user && firestore) {
         setIsKeysLoading(true);
-        await initializeKeys();
+        await initializeKeyPair();
         setIsKeysLoading(false);
 
         const userDocRef = doc(firestore, 'users', user.uid);
@@ -186,7 +185,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
             console.error(`Decryption error for message ID ${msg.id}:`, e);
             return { // Return a message indicating failure
               id: msg.id,
-              text: '[Decryption Failed - This message may be corrupt or from an older session]',
+              text: `[Decryption Failed: ${e.message}]`,
               userId: 'system',
               username: 'System',
               timestamp: msg.timestamp,
