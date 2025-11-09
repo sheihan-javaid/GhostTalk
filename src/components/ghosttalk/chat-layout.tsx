@@ -55,12 +55,12 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
           try {
             const aiName = await generateAnonymousName();
             setUserName(aiName.name);
-            setDocumentNonBlocking(userDocRef, { uid: user.uid, anonymousName: aiName.name });
+            setDocumentNonBlocking(userDocRef, { uid: user.uid, anonymousName: aiName.name }, { merge: true });
           } catch (error) {
             console.error("Failed to generate/set anonymous name:", error);
             const fallbackName = 'User' + Math.floor(Math.random() * 9000 + 1000);
             setUserName(fallbackName);
-            setDocumentNonBlocking(userDocRef, { uid: user.uid, anonymousName: fallbackName });
+            setDocumentNonBlocking(userDocRef, { uid: user.uid, anonymousName: fallbackName }, { merge: true });
           }
         }
       }
