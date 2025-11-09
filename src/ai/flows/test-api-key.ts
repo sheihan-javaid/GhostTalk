@@ -1,24 +1,18 @@
 'use server';
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { ai } from '@/ai/genkit';
+import { generate } from 'genkit';
 
 export async function testApiKey(): Promise<string> {
   try {
     if (!process.env.GOOGLE_API_KEY) {
       return 'Error: Missing GOOGLE_API_KEY in the .env file.';
     }
-    
-    // Initialize with the key
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    
-    // Use a more modern and widely available model
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    
-    const prompt = "Hello! If you can see this, respond with a single word: 'Success!'";
-    
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+
+    const { text } = await generate({
+      model: 'googleai/gemini-1.5-flash-latest',
+      prompt: "Hello! If you can see this, respond with a single word: 'Success!'",
+    });
     
     return `Success! API Response: "${text}"`;
     
@@ -28,6 +22,6 @@ export async function testApiKey(): Promise<string> {
 ---
 Message: ${err.message}
 ---
-This usually means the API key is invalid, has restrictions, or the API is not enabled in your Google Cloud project for "generativeai.googleapis.com".`;
+This usually means the API key is invalid, the API is not enabled in your Google Cloud project for "generativeai.googleapis.com", or billing is not enabled for the project.`;
   }
 }
