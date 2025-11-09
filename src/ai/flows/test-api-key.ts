@@ -1,30 +1,32 @@
 'use server';
 
-import { HfInference } from '@huggingface/inference';
+import { ai } from '@/ai/genkit';
 
 export async function testApiKey(): Promise<string> {
   try {
-    if (!process.env.HUGGINGFACE_API_KEY) {
-      return 'Error: Missing HUGGINGFACE_API_KEY in the .env file.';
+    if (!process.env.GOOGLE_API_KEY) {
+      return 'Error: Missing GOOGLE_API_KEY in the .env file.';
     }
 
-    const hf = new HfInference(process.env.HUGGINGFACE_API_KEY, { endpoint: "https://router.huggingface.co/hf-inference" });
-
-    const model = 'mistralai/Mistral-7B-Instruct-v0.2';
-    const response = await hf.textGeneration({
-      model: model,
-      inputs: "Hello! If you can see this, respond with a single word: 'Success!'",
-      parameters: { max_new_tokens: 10 }
+    const response = await ai.generate({
+      model: 'gemini-1.5-flash',
+      prompt: "Hello! If you can see this, respond with a single word: 'Success!'",
     });
     
-    return `Success! API Response for model ${model}: "${response.generated_text}"`;
+    return `Success! API Response for model gemini-1.5-flash: "${response.text}"`;
     
   } catch (err: any) {
-    console.error('API Key Test Error (Hugging Face):', err);
-    return `Error: The API call failed.
+    console.error('API Key Test Error (Genkit):', err);
+    let errorMessage = `Error: The API call failed.
 ---
 Message: ${err.message}
 ---
-This usually means the Hugging Face API key is invalid or does not have the correct permissions.`;
+This usually means the API key is invalid, has restrictions, or the API is not enabled in your Google Cloud project for "generativeai.googleapis.com".`;
+    
+    if (err.message.includes('permission denied')) {
+        errorMessage += '\n\nIt looks like a "permission denied" error. Please ensure billing is enabled for your Google Cloud project.';
+    }
+    
+    return errorMessage;
   }
 }

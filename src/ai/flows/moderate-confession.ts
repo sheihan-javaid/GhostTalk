@@ -1,37 +1,36 @@
 'use server';
 
-import { HfInference } from '@huggingface/inference';
+import { ai } from '@/ai/genkit';
+import { generate } from 'genkit/ai';
+import { z } from 'zod';
 
-const hf = new HfInference(process.env.HUGGINGFACE_API_KEY, { endpoint: "https://router.huggingface.co/hf-inference" });
+const ModerationInputSchema = z.object({
+  text: z.string(),
+});
 
-interface ModerationResult {
-  isAppropriate: boolean;
-  reason?: string;
-}
+const ModerationResponseSchema = z.object({
+  isAppropriate: z.boolean().describe('Whether the text is appropriate.'),
+  reason: z.string().optional().describe('The reason if the text is not appropriate.'),
+});
 
-export async function moderateConfession(text: string): Promise<ModerationResult> {
+const moderationPrompt = ai.definePrompt({
+    name: 'moderationPrompt',
+    input: { schema: ModerationInputSchema },
+    output: { schema: ModerationResponseSchema },
+    prompt: `You are a content moderator. Your task is to determine if the following text is appropriate. 
+    The content should not contain hate speech, harassment, or explicit content.
+    Text: "{{text}}"`,
+});
+
+export async function moderateConfession(text: string): Promise<{ isAppropriate: boolean; reason?: string; }> {
   try {
-    const result = await hf.textClassification({
-      model: 'facebook/roberta-hate-speech-dynabench-r4-target',
-      inputs: text,
-    });
-
-    // This model provides scores for 'hate', 'nothate'. We'll be strict.
-    // Find the label with the highest score.
-    const topResult = result.reduce((prev, current) => (prev.score > current.score) ? prev : current);
-
-    if (topResult.label === 'hate') {
-      return {
-        isAppropriate: false,
-        reason: `Content was flagged as inappropriate (score: ${topResult.score.toFixed(2)}).`,
-      };
+    if (!text.trim()) {
+        return { isAppropriate: true };
     }
-
-    return { isAppropriate: true };
-
+    const response = await moderationPrompt({text});
+    return response.output!;
   } catch (error) {
-    console.error('Failed to moderate confession with Hugging Face:', error);
-    // Default to inappropriate on error to be safe
+    console.error('Failed to moderate confession with Genkit:', error);
     return {
       isAppropriate: false,
       reason: 'Could not be analyzed by the moderator.',

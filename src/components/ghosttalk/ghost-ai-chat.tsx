@@ -7,14 +7,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ghostChat, getGhostAIGreeting } from '@/ai/flows/ghost-chat';
 import { Loader2, Bot, User } from 'lucide-react';
 import Link from 'next/link';
+import { MessageData } from 'genkit/ai';
 
-interface ChatMessage {
-    role: 'user' | 'model';
-    content: string[];
-}
 
 export default function GhostAiChat() {
-    const [history, setHistory] = useState<ChatMessage[]>([]);
+    const [history, setHistory] = useState<MessageData[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -23,10 +20,10 @@ export default function GhostAiChat() {
         async function fetchGreeting() {
             try {
                 const greeting = await getGhostAIGreeting();
-                setHistory([{ role: 'model', content: [greeting] }]);
+                setHistory([{ role: 'model', content: [{ text: greeting }] }]);
             } catch (error) {
                 console.error("Could not fetch greeting:", error);
-                setHistory([{ role: 'model', content: ["Hello! How can I help you?"] }]);
+                setHistory([{ role: 'model', content: [{ text: "Hello! How can I help you?"}] }]);
             } finally {
                 setIsLoading(false);
             }
@@ -43,8 +40,8 @@ export default function GhostAiChat() {
     const handleSend = async () => {
         if (!input.trim()) return;
 
-        const currentUserMessage: ChatMessage = { role: 'user', content: [input] };
-        const newHistory: ChatMessage[] = [...history, currentUserMessage];
+        const currentUserMessage: MessageData = { role: 'user', content: [{ text: input }] };
+        const newHistory: MessageData[] = [...history, currentUserMessage];
         
         setHistory(newHistory);
         setInput('');
@@ -52,14 +49,21 @@ export default function GhostAiChat() {
 
         try {
             const response = await ghostChat(newHistory);
-            setHistory(prev => [...prev, { role: 'model', content: [response] }]);
+            setHistory(prev => [...prev, { role: 'model', content: [{ text: response }] }]);
         } catch (error) {
             console.error("Ghost AI Error:", error);
-            setHistory(prev => [...prev, { role: 'model', content: ["Sorry, I've encountered an error."] }]);
+            setHistory(prev => [...prev, { role: 'model', content: [{ text: "Sorry, I've encountered an error." }] }]);
         } finally {
             setIsLoading(false);
         }
     };
+
+    const getMessageText = (msg: MessageData) => {
+        if (msg.content[0] && 'text' in msg.content[0]) {
+            return msg.content[0].text;
+        }
+        return '';
+    }
 
     return (
         <div className="flex flex-col h-screen max-w-2xl mx-auto p-4">
@@ -74,7 +78,7 @@ export default function GhostAiChat() {
                         <div key={index} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             {msg.role === 'model' && <Bot className="h-6 w-6 text-accent shrink-0"/>}
                             <div className={`p-3 rounded-lg max-w-lg ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
-                                {msg.content[0]}
+                                {getMessageText(msg)}
                             </div>
                             {msg.role === 'user' && <User className="h-6 w-6 text-accent shrink-0"/>}
                         </div>

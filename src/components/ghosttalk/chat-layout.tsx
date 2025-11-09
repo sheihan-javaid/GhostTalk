@@ -235,10 +235,13 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
 
     try {
       let textToSend = rawText;
+      let wasAnonymized = false;
+
       if (shouldAnonymize && rawText.trim()) {
         const result = await anonymizeMessage({ message: rawText });
         textToSend = result.anonymizedMessage;
-        if (rawText !== textToSend) {
+        wasAnonymized = result.anonymized;
+        if (wasAnonymized) {
             toast({
                 variant: 'default',
                 title: "Message Anonymized",
@@ -277,7 +280,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
           // This simplified model requires the sender to be in the participants list.
           encryptedPayload: messagePayloads[user.uid],
           timestamp: serverTimestamp(),
-          anonymized: shouldAnonymize && rawText !== textToSend,
+          anonymized: wasAnonymized,
       };
 
       if (!newMessageForCollection.encryptedPayload) {
