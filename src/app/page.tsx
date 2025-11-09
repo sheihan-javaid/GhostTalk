@@ -36,7 +36,7 @@ export default function Home() {
   const { user } = useUser();
   const { toast } = useToast();
 
-  const qrCodeDataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARgAAAIKBAMAAACz14y6AAAAElBMVEX///8AAADw8PDf39/m5ubx8fF41/2rAAAEh0lEQVR42u3cQW4cMRBF0a/SJH6k//+lh5Poym5rD7BQq9S5+w6B+UZn6h3i5/Hj+PH8eH48Px4fjx/Hj+PH8eP48fx4fvy//wbf/gG+f/2+L/sC3x+vj+PH8eP48fx4fvy1f/Uf8/v/2v/Yf5Tf//f+v/9w/rA+6gN8/3h9HD+OH8eP48fxx/Hj+PH8eH48f5w/jh/Hj+PH8eP4cfw4fhx/HD+OH8eP48fx4/jxw/jh/HH8eH48P44f54/jx/Hj+HH8OH4cfxw/jh/Hj+PH8eP48cN44Phx/Dh+HD+OH8eP48fx4/jx/Dh+HD+OH8eP48fx4/jx/Dh+HD+OH8eP48fx4/hxw3jg+HH8OH4cP44f54/jx/Hj+HH8OH4cfxw/jh/Hj+PH8eOG8cHw4/hx/Dh+HD+OH8eP48fx4/hx/Dh+HD+OH8eP48cN44Phx/Dh+HD+OH8eP48fx4/jx/Hj+HH8OH4cP44f548bxgfDj+HH8eP4cfw4fhx/HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4//U/wW/+AP/4v+/LfsCf/x4fT8+PB4fzx/Hj+PH8eP48fx4/jh/HH8eP48fx4/jx/Hj+PH8eP48fx4/jh/HH8eP48fx4/jx/Hj+PH8eP48fx4/jh/HH8eP48fx4/jx/Hj+PH8eP48fx4/jh/HjB8OP48fx4/jx/Hj+PH8eP48fx4/jx/Hj+PH8eP48fx4wfhg/Dh+HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/jxA+GH8eP48fx4/hx/Hj+PH8eP48fx4/hx/Hj+PH8eP48fN4wPhh/Hj+PH8eP48fx4/hx/Hj+PH8eP48fx4/hx/DhxvDB8OP4cfw4fhx/jh/Hj+PH8eP4cfw4fhx/jh/Hj+PH8eMG4YPx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4wfhg/Dh+HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/jxA+GH8eP48fx4/hx/Hj+PH8eP48fx4/hx/Hj+PH8eP48fN4wPhh/Hj+PH8eP48fx4/hx/Hj+PH8eP48fx4/hx/DhxvDB8OP4cfw4fhx/jh/Hj+PH8eP4cfw4fhx/jh/Hj+PH8eMG4YPx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4wfhg/Dh+HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/jxA+GH8eP48fx4/hx/Hj+PH8eP48fx4/hx/Hj+PH8eP48fN4wPhh/Hj+PH8eP48fx4/hx/Hj+PH8eP48fx4/hx/DhxvDB8OP4cfw4fhx/jh/Hj+PH8eP4cfw4fhx/jh/Hj+PH8eMG4YPx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4wfhg/Dh+HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/jxA+GH8eP48fx4/hx/Hj+PH8eP48fx4/hx/Hj+PH8eP48fN4wPhh/Hj+PH8eP48fx4/hx/Hj+PH8eP4GudT2AAAAAElFTkSuQmCC";
+  const qrCodeDataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARgAAAIKBAMAAACz14y6AAAAElBMVEX///8AAADw8PDf39/m5ubx8fF41/2rAAAEh0lEQVR42u3cQW4cMRBF0a/SJH6k//+lh5Poym5rD7BQq9S5+w6B+UZn6h3i5/Hj+PH8eH48Px4fjx/Hj+PH8eP48fx4fvy//wbf/gG+f/2+L/sC3x+vj+PH8eP48fx4fvy1f/Uf8/v/2v/Yf5Tf//f+v/9w/rA+6gN8/3h9HD+OH8eP48fxx/Hj+PH8eH48f5w/jh/Hj+PH8eP4cfw4fhx/HD+OH8eP48fx4/jxw/jh/HH8eH48P44f54/jx/Hj+HH8OH4cfxw/jh/Hj+PH8eP48cN44Phx/Dh+HD+OH8eP48fx4/jx/Dh+HD+OH8eP48fx4/jx/Dh+HD+OH8eP48fx4/hxw3jg+HH8OH4cP44f54/jx/Hj+HH8OH4cfxw/jh/Hj+PH8eOG8cHw4/hx/Dh+HD+OH8eP48fx4/hx/Dh+HD+OH8eP48cN44Phx/Dh+HD+OH8eP48fx4/jx/Hj+HH8OH4cP44f548bxgfDj+HH8eP4cfw4fhx/HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+nDfOD4Yf54/jx/Hj+HH8eH4cP44f54/jx/Hj+HH8eH48f9w4Phh/HD+OH8eP48fx4//U/wW/+AP/4v+/LfsCf/x4fT8+PB4fzx/Hj+PH8eP48fx4/jh/HH8eP48fx4/jx/Hj+PH8eP48fx4/jh/HH8eP48fx4/jx/Hj+PH8eP48fx4/jh/HH8eP48fx4/jx/Hj+PH8eP48fx4/jh/HjB8OP48fx4/jx/Hj+PH8eP48fx4/jx/Hj+PH8eP48fx4wfhg/Dh+HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/jxA+GH8eP48fx4/hx/Hj+PH8eP48fx4/hx/Hj+PH8eP48fN4wPhh/Hj+PH8eP48fx4/hx/Hj+PH8eP48fx4/hx/DhxvDB8OP4cfw4fhx/jh/Hj+PH8eP4cfw4fhx/jh/Hj+PH8eMG4YPx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4wfhg/Dh+HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/jxA+GH8eP48fx4/hx/Hj+PH8eP48fx4/hx/Hj+PH8eP48fN4wPhh/Hj+PH8eP48fx4/hx/Hj+PH8eP48fx4/hx/DhxvDB8OP4cfw4fhx/jh/Hj+PH8eP4cfw4fhx/jh/Hj+PH8eMG4YPx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4wfhg/Dh+HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/jxA+GH8eP48fx4/hx/Hj+PH8eP48fx4/hx/Hj+PH8eP48fN4wPhh/Hj+PH8eP48fx4/hx/Hj+PH8eP48fx4/hx/DhxvDB8OP4cfw4fhx/jh/Hj+PH8eP4cfw4fhx/jh/Hj+PH8eMG4YPx4/hx/Dh+HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4wfhg/Dh+HD+OH8eP48fx4/hx/Dh+HD+OH8eP48fx4/jxA+GH8eP48fx4/hx/Hj+PH8eP48fx4/hx/Hj+PH8eP48fN4wPhh/Hj+PH8eP48fx4/hx/Hj+PH8eP4GudT2AAAAAElFTkSuQmCC";
 
   useEffect(() => {
     if (!user && auth) {
@@ -248,39 +248,56 @@ export default function Home() {
           </DialogContent>
         </Dialog>
 
-         <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-               <Coffee className="h-8 w-8 text-accent" />
-               <span className="text-2xl font-headline">Support Us</span>
-            </CardTitle>
-            <CardDescription>
-              If you enjoy GhostTalk, consider supporting its development anonymously.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center gap-4">
-              <div className="relative w-48 h-48 bg-white rounded-lg p-2">
-                <Image
-                    src={qrCodeDataUrl}
-                    alt="BHIM UPI QR Code for mohammadsheihanjavaid"
-                    layout="fill"
-                    objectFit="contain"
-                    unoptimized
-                />
-              </div>
-              <p className="text-sm text-muted-foreground">Scan to donate anonymously</p>
-              <a
-                href="https://razorpay.me/@mohammadsheihanjavaid"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-mono text-accent underline hover:text-accent/80 text-center break-all text-sm"
-              >
-                ghost-talk@privacy
-              </a>
-            </div>
-          </CardContent>
-        </Card>
+        <Dialog>
+            <DialogTrigger asChild>
+                <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50 cursor-pointer">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-3">
+                        <Coffee className="h-8 w-8 text-accent" />
+                        <span className="text-2xl font-headline">Support Us</span>
+                        </CardTitle>
+                        <CardDescription>
+                        If you enjoy GhostTalk, consider supporting its development.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold">
+                            Show Support Options
+                            <ArrowRight className="ml-2 h-5 w-5" />
+                        </Button>
+                    </CardContent>
+                </Card>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Support GhostTalk</DialogTitle>
+                    <DialogDescription>
+                    Your support helps keep this service running. All donations are anonymous.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-col items-center gap-4 py-4">
+                    <div className="relative w-48 h-48 bg-white rounded-lg p-2">
+                         <Image
+                            src={qrCodeDataUrl}
+                            alt="BHIM UPI QR Code for mohammadsheihanjavaid"
+                            width={192}
+                            height={192}
+                            className="object-contain"
+                            unoptimized
+                        />
+                    </div>
+                    <p className="text-sm text-muted-foreground">Scan to donate anonymously</p>
+                    <a
+                        href="https://razorpay.me/@mohammadsheihanjavaid"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-accent underline hover:text-accent/80 text-center break-all text-sm"
+                    >
+                        ghost-talk@privacy
+                    </a>
+                </div>
+            </DialogContent>
+        </Dialog>
       </div>
       <footer className="mt-20 text-center text-muted-foreground text-sm">
         <p>Your privacy is paramount. All messages are end-to-end encrypted and metadata is stripped.</p>
@@ -290,3 +307,5 @@ export default function Home() {
   );
 
 }
+
+    
