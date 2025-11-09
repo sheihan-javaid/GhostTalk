@@ -2,27 +2,36 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Chat rooms can be read by anyone, but only created by signed-in users.
-    // No one can update or delete them directly.
+    // Rules for chat rooms
     match /chatRooms/{roomId} {
+      // Anyone can see the list of rooms or read a specific room's metadata.
       allow read, list: if true;
+      // Only authenticated users can create new chat rooms.
       allow create: if request.auth != null;
-      // Allow users to update the publicKeys map
+      // Authenticated users can update a room, but ONLY to add/update their public key.
+      // This is crucial for the end-to-end encryption to work.
       allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['publicKeys']);
+      // No one is allowed to delete a chat room.
       allow delete: if false;
 
-      // Messages can be created by any authenticated user.
-      // A single message can be read if the user is the recipient.
-      // A list of messages can be queried ONLY if the query filters for the user's own recipientId.
-      // No one can update or delete messages directly.
+      // Rules for messages within a chat room
       match /messages/{messageId} {
-        allow write: if request.auth != null;
-        allow read: if request.auth != null && resource.data.recipientId == request.auth.uid;
-        allow list: if request.auth != null 
-                    && request.query.where.size() == 1 
-                    && request.query.where[0].field == "recipientId" 
-                    && request.query.where[0].op == "==" 
+        // Any authenticated user can create a message.
+        allow create: if request.auth != null;
+
+        // A user can GET a single message document only if they are the recipient.
+        allow get: if request.auth != null && resource.data.recipientId == request.auth.uid;
+        
+        // A user can LIST (query) messages ONLY IF the query explicitly filters for their own UID.
+        // This is the key fix for the "Missing or insufficient permissions" error.
+        allow list: if request.auth != null
+                    && request.query.get("where") != null
+                    && request.query.where.size() == 1
+                    && request.query.where[0].field == "recipientId"
+                    && request.query.where[0].op == "=="
                     && request.query.where[0].value == request.auth.uid;
+        
+        // No one can update or delete messages directly. TTL policy will handle deletion.
         allow update, delete: if false;
       }
     }
