@@ -16,23 +16,36 @@ interface ChatMessage {
 export default function GhostAiChat() {
     const [history, setHistory] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Start with a default greeting without an API call
-        setHistory([{ role: 'model', content: ["Hello! 👋 I'm GhostAI. How can I help you today?"] }]);
+        async function fetchGreeting() {
+            try {
+                const greeting = await getGhostAIGreeting();
+                setHistory([{ role: 'model', content: [greeting] }]);
+            } catch (error) {
+                console.error("Could not fetch greeting:", error);
+                setHistory([{ role: 'model', content: ["Hello! How can I help you?"] }]);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchGreeting();
     }, []);
 
     const handleSend = async () => {
         if (!input.trim()) return;
 
-        const newHistory: ChatMessage[] = [...history, { role: 'user', content: [input] }];
-        setHistory(newHistory);
+        const currentUserMessage: ChatMessage = { role: 'user', content: [input] };
+        const newHistoryWithUserMessage: ChatMessage[] = [...history, currentUserMessage];
+        setHistory(newHistoryWithUserMessage);
+        const userInput = input;
         setInput('');
         setIsLoading(true);
 
         try {
-            const response = await ghostChat(newHistory);
+            // Pass the previous history and the new message separately
+            const response = await ghostChat(history, userInput);
             setHistory(prev => [...prev, { role: 'model', content: [response] }]);
         } catch (error) {
             console.error("Ghost AI Error:", error);
@@ -60,7 +73,7 @@ export default function GhostAiChat() {
                             {msg.role === 'user' && <User className="h-6 w-6 text-accent shrink-0"/>}
                         </div>
                     ))}
-                    {isLoading && history.length > 0 && (
+                    {isLoading && (
                          <div className="flex gap-3 justify-start">
                              <Bot className="h-6 w-6 text-accent shrink-0"/>
                              <div className="p-3 rounded-lg bg-background flex items-center">

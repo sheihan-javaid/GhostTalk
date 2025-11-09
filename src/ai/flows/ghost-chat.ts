@@ -10,7 +10,7 @@ interface HistoryMessage {
   content: string[];
 }
 
-export async function ghostChat(history: HistoryMessage[]): Promise<string> {
+export async function ghostChat(history: HistoryMessage[], lastUserMessage: string): Promise<string> {
   try {
     // Format chat history properly for Gemini
     const formattedHistory = history.map(msg => ({
@@ -18,16 +18,11 @@ export async function ghostChat(history: HistoryMessage[]): Promise<string> {
       parts: msg.content.map(text => ({ text })),
     }));
     
-    const lastUserMessage = formattedHistory.pop();
-    if (!lastUserMessage) {
-        return "I can't respond to an empty message.";
-    }
-
     const chat = model.startChat({
       history: formattedHistory,
     });
 
-    const result = await chat.sendMessage(lastUserMessage.parts);
+    const result = await chat.sendMessage(lastUserMessage);
     const response = result.response;
     const text = response.text();
 
