@@ -4,25 +4,15 @@ import { getMyPrivateKey } from './e2ee';
 
 // Helper: ArrayBuffer → Base64
 function ab2b64(buf: ArrayBuffer): string {
-  let binary = '';
-  const bytes = new Uint8Array(buf);
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
+  return Buffer.from(buf).toString('base64');
 }
 
 // Helper: Base64 → ArrayBuffer
 function b642ab(b64: string): ArrayBuffer {
-  const binary = atob(b64);
-  const len = binary.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes.buffer;
+  const buf = Buffer.from(b64, 'base64');
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
 }
+
 
 export async function encrypt(text: string, recipientPublicKey: CryptoKey): Promise<string> {
   const enc = new TextEncoder();
@@ -56,31 +46,26 @@ export async function encrypt(text: string, recipientPublicKey: CryptoKey): Prom
     iv: ab2b64(iv),
     ct: ab2b64(ciphertext),
   };
-
-  // Base64-encode the entire JSON package to ensure its integrity
-  return btoa(JSON.stringify(packaged));
+  
+  // Create a JSON string of the package, then Base64-encode the entire string to ensure integrity.
+  const packageString = JSON.stringify(packaged);
+  return Buffer.from(packageString).toString('base64');
 }
 
 export async function decrypt(encryptedPackageB64: string): Promise<string> {
   const myPrivateKey = await getMyPrivateKey();
   if (!myPrivateKey) throw new Error("Private key not found.");
 
-  // Decode Base64 to get the original JSON string
-  const jsonStr = atob(encryptedPackageB64);
-  let packaged;
-  try {
-    packaged = JSON.parse(jsonStr);
-  } catch (err) {
-    console.error("Failed to parse JSON:", err, jsonStr.slice(0, 100));
-    throw new Error("Corrupted message — not valid JSON.");
-  }
-
+  // 1. Base64-decode the incoming string to get the original JSON string.
+  const encryptedPackageString = Buffer.from(encryptedPackageB64, 'base64').toString('utf-8');
+  const packaged = JSON.parse(encryptedPackageString);
+  
   const { ephemPubKey, iv, ct } = packaged;
 
   if (!ephemPubKey || !iv || !ct) {
     throw new Error("Invalid encrypted package structure.");
   }
-
+  
   const ivAb = b642ab(iv);
   const ciphertextAb = b642ab(ct);
 
