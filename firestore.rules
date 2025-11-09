@@ -12,13 +12,13 @@ service cloud.firestore {
       allow delete: if false;
 
       // Messages can be created by any authenticated user.
-      // They can only be read (listed) if the user is the recipient.
-      // No one can update or delete them directly.
+      // A single message can be read if the user is the recipient.
+      // A list of messages can be queried ONLY if the query filters for the user's own recipientId.
+      // No one can update or delete messages directly.
       match /messages/{messageId} {
         allow write: if request.auth != null;
         allow read: if request.auth != null && resource.data.recipientId == request.auth.uid;
-        // This allows a user to query for messages where they are the recipient.
-        allow list: if request.auth != null && request.query.get('where')[0][1] == 'recipientId' && request.query.get('where')[0][2] == request.auth.uid;
+        allow list: if request.auth != null && request.query.where.size() == 1 && request.query.where[0].field == "recipientId" && request.query.where[0].op == "==" && request.query.where[0].value == request.auth.uid;
         allow update, delete: if false;
       }
     }
