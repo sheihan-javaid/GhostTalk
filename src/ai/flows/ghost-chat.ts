@@ -21,6 +21,7 @@ export async function ghostChat(history: HistoryMessage[]): Promise<string> {
   }));
 
   const response = await ai.generate({
+    model: 'googleai/gemini-2.5-flash',
     prompt: genkitHistory,
     config: {
       temperature: 0.8,
