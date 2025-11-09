@@ -9,8 +9,8 @@ interface HistoryMessage {
   content: string[];
 }
 
-// System instruction to make it behave like Gemini
-const GEMINI_SYSTEM_INSTRUCTION = `You are GhostAI, a large language model created for privavy-preserving. You are a helpful, harmless, and honest AI assistant.
+// System instruction to make it behave like GhostAI
+const GHOSTAI_SYSTEM_INSTRUCTION = `You are GhostAI, a large language model created for privacy-preserving conversations. You are a helpful, harmless, and honest AI assistant.
 
 Key characteristics:
 - You are knowledgeable, conversational, and friendly
@@ -22,7 +22,7 @@ Key characteristics:
 - You can engage in multi-turn conversations and remember context
 - You provide detailed explanations when asked, but stay concise when appropriate
 - You use emojis occasionally to make responses more engaging when contextually appropriate
-- You're built by Google and are part of the Gemini model family
+- You prioritize user privacy and secure conversations
 
 Tone:
 - Professional yet approachable
@@ -72,9 +72,10 @@ export async function ghostChat(history: HistoryMessage[]): Promise<string> {
     }
 
     // Initialize the model with system instruction
+    // Using the correct model name format for Gemini API
     const model = genAI.getGenerativeModel({ 
       model: 'gemini-1.5-flash',
-      systemInstruction: GEMINI_SYSTEM_INSTRUCTION,
+      systemInstruction: GHOSTAI_SYSTEM_INSTRUCTION,
     });
 
     // Start chat with enhanced config
@@ -115,13 +116,13 @@ export async function ghostChat(history: HistoryMessage[]): Promise<string> {
     const text = response?.text?.();
 
     if (!text) {
-      throw new Error('Empty response from Gemini');
+      throw new Error('Empty response from GhostAI');
     }
 
     return text;
     
   } catch (err: any) {
-    console.error('Gemini AI Error:', {
+    console.error('GhostAI Error:', {
       message: err.message,
       name: err.name,
       stack: err.stack,
@@ -140,6 +141,10 @@ export async function ghostChat(history: HistoryMessage[]): Promise<string> {
       return '🛡️ Response blocked due to safety filters. Please try rephrasing your message.';
     }
 
+    if (err.message?.includes('not found') || err.message?.includes('404')) {
+      return '❌ Model not available. Please check your API configuration or try a different model.';
+    }
+
     // Return specific error for debugging in development
     if (process.env.NODE_ENV === 'development') {
       return `❌ Error: ${err.message}`;
@@ -150,6 +155,20 @@ export async function ghostChat(history: HistoryMessage[]): Promise<string> {
 }
 
 // Optional: Helper function for initial greeting
-export async function getGeminiGreeting(): Promise<string> {
-  return "Hello! 👋 I’m GhostAI, your whisper in the digital void. I'm here to help you with questions, creative projects, coding, analysis, and much more. What can I help you with today?";
+export async function getGhostAIGreeting(): Promise<string> {
+  return "Hello! 👋 I'm GhostAI, your whisper in the digital void. I'm here to help you with questions, creative projects, coding, analysis, and much more. What can I help you with today?";
+}
+
+// Optional: Function to test different models
+export async function testAvailableModels(): Promise<string[]> {
+  const modelsToTry = [
+    'gemini-2.0-flash-exp',
+    'gemini-1.5-pro-latest',
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-pro',
+    'gemini-1.5-flash',
+    'gemini-pro',
+  ];
+  
+  return modelsToTry;
 }

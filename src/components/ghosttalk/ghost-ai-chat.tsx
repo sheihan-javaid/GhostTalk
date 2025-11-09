@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ghostChat, getGeminiGreeting } from '@/ai/flows/ghost-chat';
+import { ghostChat, getGhostAIGreeting } from '@/ai/flows/ghost-chat';
 import { Loader2, Bot, User } from 'lucide-react';
 import Link from 'next/link';
 
@@ -20,7 +20,7 @@ export default function GhostAiChat() {
 
     useEffect(() => {
         const fetchGreeting = async () => {
-            const greeting = await getGeminiGreeting();
+            const greeting = await getGhostAIGreeting();
             setHistory([{ role: 'model', content: [greeting] }]);
             setIsLoading(false);
         };
