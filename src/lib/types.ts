@@ -12,3 +12,12 @@ export interface Message {
     data: string; // base64 encoded
   };
 }
+
+export interface UiSettings {
+    messageExpiry: number;
+    themeColor: 'default' | 'fire' | 'ice';
+    fontSize: 'small' | 'medium' | 'large';
+    bubbleStyle: 'rounded' | 'sharp';
+    showUsername: boolean;
+    animationIntensity: 'low' | 'medium' | 'off';
+}

@@ -4,20 +4,30 @@ import { useState, useEffect, useCallback } from 'react';
 import { anonymizeMessage } from '@/ai/flows/anonymize-message-metadata';
 import { generateAnonymousName } from '@/ai/flows/generate-anonymous-name';
 import { useFileEncryption } from '@/hooks/use-file-encryption';
-import type { Message } from '@/lib/types';
+import type { Message, UiSettings } from '@/lib/types';
 import MessageList from './message-list';
 import MessageInput from './message-input';
 import ChatHeader from './chat-header';
 import { useToast } from "@/hooks/use-toast";
+import { Sparkles } from 'lucide-react';
 
 const GHOST_USER_ID = 'ghost-user';
+
+const defaultSettings: UiSettings = {
+  messageExpiry: 300,
+  themeColor: 'default',
+  fontSize: 'medium',
+  bubbleStyle: 'rounded',
+  showUsername: true,
+  animationIntensity: 'medium',
+};
 
 export default function ChatLayout({ roomId }: { roomId: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [userId, setUserId] = useState('');
   const [userName, setUserName] = useState('');
   const [ghostName, setGhostName] = useState('A fellow Ghost');
-  const [messageExpiry, setMessageExpiry] = useState<number>(300); // 5 minutes in seconds
+  const [settings, setSettings] = useState<UiSettings>(defaultSettings);
   const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
   const { encryptFile, decryptFile } = useFileEncryption();
@@ -65,17 +75,17 @@ export default function ChatLayout({ roomId }: { roomId: string }) {
 
   // Message Expiry Logic
   useEffect(() => {
-    if (messageExpiry === 0) return; // 0 means never expire
+    if (settings.messageExpiry === 0) return; // 0 means never expire
 
     const interval = setInterval(() => {
       const now = Date.now();
       setMessages(prevMessages =>
-        prevMessages.filter(msg => (now - msg.timestamp) / 1000 < messageExpiry)
+        prevMessages.filter(msg => (now - msg.timestamp) / 1000 < settings.messageExpiry)
       );
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [messageExpiry]);
+  }, [settings.messageExpiry]);
 
 
   const handleSendMessage = useCallback(async (rawText: string, shouldAnonymize: boolean, file?: File) => {
@@ -88,10 +98,12 @@ export default function ChatLayout({ roomId }: { roomId: string }) {
         const result = await anonymizeMessage({ message: rawText });
         textToSend = result.anonymizedMessage;
         if (rawText !== textToSend) {
-          toast({
-              title: "Message Anonymized",
-              description: "Your message was altered by our AI to protect your privacy.",
-          })
+            toast({
+                variant: 'default',
+                title: "Message Anonymized",
+                description: "Your message was altered by our AI to protect your privacy.",
+                icon: <Sparkles className="text-accent" />,
+            })
         }
       }
       
@@ -142,12 +154,42 @@ export default function ChatLayout({ roomId }: { roomId: string }) {
     }
   }, [isSending, userId, userName, toast, encryptFile, ghostName]);
   
+  const handleSettingsChange = (newSettings: Partial<UiSettings>) => {
+    setSettings(prev => ({...prev, ...newSettings}));
+  }
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (settings.themeColor === 'default') {
+      root.style.setProperty('--primary', '274 70% 31%');
+      root.style.setProperty('--accent', '286 82% 55%');
+    } else if (settings.themeColor === 'fire') {
+      root.style.setProperty('--primary', '17 89% 47%');
+      root.style.setProperty('--accent', '39 91% 55%');
+    } else if (settings.themeColor === 'ice') {
+        root.style.setProperty('--primary', '206 84% 35%');
+        root.style.setProperty('--accent', '186 96% 77%');
+    }
+    
+    if (settings.fontSize === 'small') {
+        root.style.setProperty('--font-size', '0.875rem');
+    } else if (settings.fontSize === 'medium') {
+        root.style.setProperty('--font-size', '1rem');
+    } else {
+        root.style.setProperty('--font-size', '1.125rem');
+    }
+    
+    document.body.dataset.bubbleStyle = settings.bubbleStyle;
+    document.body.dataset.animationIntensity = settings.animationIntensity;
+
+  }, [settings]);
+
 
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <ChatHeader roomId={roomId} onSettingsChange={setMessageExpiry} messageExpiry={messageExpiry} />
+    <div className={`flex flex-col h-screen bg-background animate-intensity-${settings.animationIntensity}`}>
+      <ChatHeader roomId={roomId} onSettingsChange={handleSettingsChange} settings={settings} />
       <div className="flex-1 overflow-hidden">
-        <MessageList messages={messages} currentUserId={userId} />
+        <MessageList messages={messages} currentUserId={userId} showUsername={settings.showUsername} />
       </div>
       <div className="p-4 md:p-6 border-t border-border bg-background/80 backdrop-blur-sm">
         <MessageInput onSendMessage={handleSendMessage} isSending={isSending} />

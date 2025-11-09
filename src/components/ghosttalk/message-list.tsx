@@ -10,13 +10,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 interface MessageListProps {
   messages: Message[];
   currentUserId: string;
+  showUsername: boolean;
 }
 
-function MessageItem({ message, isCurrentUser }: { message: Message, isCurrentUser: boolean }) {
+function MessageItem({ message, isCurrentUser, showUsername }: { message: Message, isCurrentUser: boolean, showUsername: boolean }) {
   const alignClass = isCurrentUser ? 'items-end' : 'items-start';
   const bubbleClass = isCurrentUser
-    ? 'bg-primary text-primary-foreground rounded-br-none'
-    : 'bg-secondary text-secondary-foreground rounded-bl-none';
+    ? 'bg-primary text-primary-foreground'
+    : 'bg-secondary text-secondary-foreground';
   
   const formattedTime = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -28,20 +29,22 @@ function MessageItem({ message, isCurrentUser }: { message: Message, isCurrentUs
         'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-4 duration-500'
       )}
     >
-      <div className="flex items-center gap-2">
-        {!isCurrentUser && (
-            <Avatar className="h-6 w-6">
-                <AvatarFallback className="bg-muted text-muted-foreground text-xs">
-                    <User className="h-4 w-4"/>
-                </AvatarFallback>
-            </Avatar>
-        )}
-        <span className="text-xs text-muted-foreground">{!isCurrentUser ? message.username : 'You'}</span>
-      </div>
+      {showUsername && (
+        <div className="flex items-center gap-2">
+          {!isCurrentUser && (
+              <Avatar className="h-6 w-6">
+                  <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+                      <User className="h-4 w-4"/>
+                  </AvatarFallback>
+              </Avatar>
+          )}
+          <span className="text-xs text-muted-foreground">{!isCurrentUser ? message.username : 'You'}</span>
+        </div>
+      )}
       <div className={cn(
-          "max-w-xs md:max-w-md lg:max-w-2xl p-3 rounded-xl shadow-md transform transition-all duration-300", 
+          "max-w-xs md:max-w-md lg:max-w-2xl p-3 shadow-md transform transition-all duration-300 rounded-[var(--bubble-radius)]", 
           bubbleClass,
-          isCurrentUser ? 'motion-safe:hover:-translate-x-1' : 'motion-safe:hover:translate-x-1'
+          isCurrentUser ? 'rounded-br-none motion-safe:hover:-translate-x-1' : 'rounded-bl-none motion-safe:hover:translate-x-1'
         )}
       >
         {message.text && <p className="text-sm break-words">{message.text}</p>}
@@ -103,7 +106,7 @@ function MessageItem({ message, isCurrentUser }: { message: Message, isCurrentUs
 }
 
 
-export default function MessageList({ messages, currentUserId }: MessageListProps) {
+export default function MessageList({ messages, currentUserId, showUsername }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -124,6 +127,7 @@ export default function MessageList({ messages, currentUserId }: MessageListProp
           key={message.id}
           message={message}
           isCurrentUser={message.userId === currentUserId}
+          showUsername={showUsername}
         />
       ))}
     </div>

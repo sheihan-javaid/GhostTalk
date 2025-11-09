@@ -29,7 +29,8 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "border bg-background text-foreground",
+        default:
+          "border bg-background text-foreground border-accent/30 bg-secondary/50",
         destructive:
           "destructive group border-destructive bg-destructive text-destructive-foreground",
       },
@@ -112,7 +113,9 @@ const ToastDescription = React.forwardRef<
 ))
 ToastDescription.displayName = ToastPrimitives.Description.displayName
 
-type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
+type ToastProps = React.ComponentPropsWithoutRef<typeof Toast> & {
+    icon?: React.ReactNode;
+}
 
 type ToastActionElement = React.ReactElement<typeof ToastAction>
 

@@ -1,20 +1,29 @@
 'use client';
 
-import { Ghost, Settings, Copy, Check } from 'lucide-react';
+import { Ghost, Settings, Copy, Check, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import ChatSettings from './chat-settings';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import type { UiSettings } from '@/lib/types';
+
 
 interface ChatHeaderProps {
   roomId: string;
-  onSettingsChange: (expiry: number) => void;
-  messageExpiry: number;
+  onSettingsChange: (settings: Partial<UiSettings>) => void;
+  settings: UiSettings;
 }
 
-export default function ChatHeader({ roomId, onSettingsChange, messageExpiry }: ChatHeaderProps) {
+export default function ChatHeader({ roomId, onSettingsChange, settings }: ChatHeaderProps) {
   const [inviteLink, setInviteLink] = useState('');
   const [isCopied, setIsCopied] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     // This needs to run on the client to get the window.location
@@ -45,12 +54,28 @@ export default function ChatHeader({ roomId, onSettingsChange, messageExpiry }: 
             </Button>
           </div>
         )}
-        <ChatSettings onSettingsChange={onSettingsChange} currentExpiry={messageExpiry}>
-          <Button variant="outline" size="icon" className="border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground">
-            <Settings className="h-5 w-5" />
-            <span className="sr-only">Chat Settings</span>
-          </Button>
-        </ChatSettings>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className="border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground">
+              <Settings className="h-5 w-5" />
+              <span className="sr-only">Chat Settings</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => setIsSettingsOpen(true)}>
+              <Palette className="mr-2 h-4 w-4" />
+              <span>Appearance</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <ChatSettings 
+            isOpen={isSettingsOpen} 
+            onOpenChange={setIsSettingsOpen} 
+            onSettingsChange={onSettingsChange} 
+            currentSettings={settings}
+        />
+
       </div>
     </header>
   );

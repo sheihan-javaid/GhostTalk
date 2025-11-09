@@ -24,6 +24,8 @@
     --input: 240 5% 22%;
     --ring: 286 82% 55%;
     --radius: 0.5rem;
+    --font-size: 1rem;
+    --bubble-radius: 0.75rem;
   }
  
   .dark {
@@ -55,5 +57,29 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: var(--font-size);
   }
 }
+
+.animate-intensity-high {
+  animation-duration: 300ms;
+}
+.animate-intensity-low {
+  animation-duration: 800ms;
+}
+.animate-intensity-off {
+  animation-duration: 0ms !important;
+  transition-duration: 0ms !important;
+  animation-delay: 0ms !important;
+  transition-delay: 0ms !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+[data-bubble-style="sharp"] {
+  --bubble-radius: 0.25rem;
+}
+[data-bubble-style="rounded"] {
+  --bubble-radius: 0.75rem;
+}
+
