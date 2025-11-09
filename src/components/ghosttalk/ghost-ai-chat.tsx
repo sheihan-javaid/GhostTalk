@@ -16,15 +16,11 @@ interface ChatMessage {
 export default function GhostAiChat() {
     const [history, setHistory] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
-        const fetchGreeting = async () => {
-            const greeting = await getGhostAIGreeting();
-            setHistory([{ role: 'model', content: [greeting] }]);
-            setIsLoading(false);
-        };
-        fetchGreeting();
+        // Start with a default greeting without an API call
+        setHistory([{ role: 'model', content: ["Hello! 👋 I'm GhostAI. How can I help you today?"] }]);
     }, []);
 
     const handleSend = async () => {
