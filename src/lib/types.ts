@@ -17,7 +17,7 @@ export interface Message {
 
 export interface UiSettings {
     messageExpiry: number;
-    themeColor: 'default' | 'fire' | 'ice';
+    themeColor: 'default' | 'fire' | 'ice' | 'forest' | 'cyberpunk' | 'noir';
     fontSize: 'small' | 'medium' | 'large';
     bubbleStyle: 'rounded' | 'sharp';
     showUsername: boolean;

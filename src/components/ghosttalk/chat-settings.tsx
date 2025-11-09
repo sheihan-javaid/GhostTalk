@@ -24,6 +24,9 @@ const themeOptions = [
     { value: 'default', label: 'Default (Purple/Pink)' },
     { value: 'fire', label: 'Fire (Red/Orange)' },
     { value: 'ice', label: 'Ice (Blue/Cyan)' },
+    { value: 'forest', label: 'Forest (Green/Lime)' },
+    { value: 'cyberpunk', label: 'Cyberpunk (Yellow/Fuchsia)' },
+    { value: 'noir', label: 'Noir (Grayscale)' },
 ]
 
 const fontSizeOptions = [

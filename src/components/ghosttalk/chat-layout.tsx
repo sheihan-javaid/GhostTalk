@@ -48,7 +48,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
           roomsRef,
           where('isPublic', '==', true),
           where('region', '==', region),
-          orderBy('createdAt', 'desc'),
+          // orderBy('createdAt', 'desc'), // This requires an index
           limit(1)
         );
         const querySnapshot = await getDocs(q);
@@ -189,6 +189,15 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
     } else if (settings.themeColor === 'ice') {
         root.style.setProperty('--primary', '206 84% 35%');
         root.style.setProperty('--accent', '186 96% 77%');
+    } else if (settings.themeColor === 'forest') {
+        root.style.setProperty('--primary', '120 61% 34%');
+        root.style.setProperty('--accent', '135 65% 75%');
+    } else if (settings.themeColor === 'cyberpunk') {
+        root.style.setProperty('--primary', '54 100% 50%');
+        root.style.setProperty('--accent', '325 100% 50%');
+    } else if (settings.themeColor === 'noir') {
+        root.style.setProperty('--primary', '0 0% 80%');
+        root.style.setProperty('--accent', '0 0% 95%');
     }
     
     if (settings.fontSize === 'small') {
@@ -225,5 +234,3 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
     </div>
   );
 }
-
-    
