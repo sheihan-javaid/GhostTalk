@@ -14,7 +14,7 @@ import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import imageData from '@/lib/placeholder-images.json';
 
 const regions = [
   { value: 'north-america', label: 'North America' },
@@ -35,7 +35,7 @@ export default function Home() {
   const { user } = useUser();
   const { toast } = useToast();
 
-  const qrCodeImage = PlaceHolderImages.find(img => img.id === 'upi-qr-code');
+  const qrCodeImage = imageData.placeholderImages.find(img => img.id === 'upi-qr-code');
 
   useEffect(() => {
     if (!user && auth) {
