@@ -1,0 +1,13 @@
+diff --git a/node_modules/@huggingface/inference/src/lib/server-utils.ts b/node_modules/@huggingface/inference/src/lib/server-utils.ts
+index 7254881..30d5071 100644
+--- a/node_modules/@huggingface/inference/src/lib/server-utils.ts
++++ b/node_modules/@huggingface/inference/src/lib/server-utils.ts
+@@ -10,7 +10,7 @@
+  * The default inference endpoint
+  */
+ export const INFERENCE_ENDPOINT =
+-	process.env["HF_INFERENCE_ENDPOINT"] ?? "https://api-inference.huggingface.co";
++	process.env["HF_INFERENCE_ENDPOINT"] ?? "https://api-inference.huggingface.co/models";
+ 
+ export const INFERENCE_URL = `${INFERENCE_ENDPOINT}/pipeline`;
+ 
