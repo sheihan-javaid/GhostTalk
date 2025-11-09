@@ -9,10 +9,10 @@ service cloud.firestore {
       allow create: if request.auth != null;
       allow update, delete: if false;
 
-      // Messages can be read and created by any authenticated user in the room.
+      // Messages can be read, listed, and created by any authenticated user.
       // No one can update or delete them directly.
       match /messages/{messageId} {
-        allow read, write: if request.auth != null;
+        allow list, read, write: if request.auth != null;
         allow update, delete: if false;
       }
     }
