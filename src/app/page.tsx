@@ -14,6 +14,7 @@ import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const regions = [
   { value: 'north-america', label: 'North America' },
@@ -33,6 +34,8 @@ export default function Home() {
   const { auth, firestore } = useFirebase();
   const { user } = useUser();
   const { toast } = useToast();
+
+  const qrCodeImage = PlaceHolderImages.find(img => img.id === 'upi-qr-code');
 
   useEffect(() => {
     if (!user && auth) {
@@ -270,14 +273,16 @@ export default function Home() {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-4">
-                    <Image 
-                        src="https://i.ibb.co/6rWd4Wf/qr-code.png"
-                        alt="UPI QR code for anonymous donations"
-                        width={200}
-                        height={200}
-                        data-ai-hint="qr code"
-                        className="rounded-md"
-                    />
+                    {qrCodeImage && (
+                        <Image 
+                            src={qrCodeImage.imageUrl}
+                            alt={qrCodeImage.description}
+                            width={250}
+                            height={250}
+                            data-ai-hint={qrCodeImage.imageHint}
+                            className="rounded-md"
+                        />
+                    )}
                     <a 
                         href="https://razorpay.me/@mohammadsheihanjavaid"
                         target="_blank"
