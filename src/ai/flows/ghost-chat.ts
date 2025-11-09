@@ -7,15 +7,21 @@
  */
 
 import {ai} from '@/ai/genkit';
+import { Part } from 'genkit';
 
 interface HistoryMessage {
   role: 'user' | 'model';
-  content: { text: string }[];
+  content: string[];
 }
 
 export async function ghostChat(history: HistoryMessage[]): Promise<string> {
+  const genkitHistory = history.map(msg => ({
+    role: msg.role,
+    content: msg.content.map(c => Part.text(c))
+  }));
+
   const response = await ai.generate({
-    prompt: history,
+    prompt: genkitHistory,
     config: {
       temperature: 0.8,
     },
