@@ -39,13 +39,11 @@ export default function GhostAiChat() {
         const currentUserMessage: ChatMessage = { role: 'user', content: [input] };
         const newHistoryWithUserMessage: ChatMessage[] = [...history, currentUserMessage];
         setHistory(newHistoryWithUserMessage);
-        const userInput = input;
         setInput('');
         setIsLoading(true);
 
         try {
-            // Pass the previous history and the new message separately
-            const response = await ghostChat(history, userInput);
+            const response = await ghostChat(newHistoryWithUserMessage);
             setHistory(prev => [...prev, { role: 'model', content: [response] }]);
         } catch (error) {
             console.error("Ghost AI Error:", error);

@@ -3,29 +3,27 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
-const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
-interface HistoryMessage {
+interface ChatMessage {
   role: 'user' | 'model';
   content: string[];
 }
 
-export async function ghostChat(history: HistoryMessage[], lastUserMessage: string): Promise<string> {
+export async function ghostChat(history: ChatMessage[]): Promise<string> {
   try {
-    // Format chat history properly for Gemini
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
     const formattedHistory = history.map(msg => ({
       role: msg.role,
       parts: msg.content.map(text => ({ text })),
     }));
     
-    const chat = model.startChat({
-      history: formattedHistory,
+    const result = await model.generateContent({
+        contents: formattedHistory
     });
 
-    const result = await chat.sendMessage(lastUserMessage);
-    const response = result.response;
+    const response = await result.response;
     const text = response.text();
-
     return text;
 
   } catch (err: any) {
