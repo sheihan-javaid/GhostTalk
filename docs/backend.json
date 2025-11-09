@@ -6,43 +6,36 @@
       "type": "object",
       "description": "Represents a single message within a chat.",
       "properties": {
-        "id": {
+        "userId": {
           "type": "string",
-          "description": "Unique identifier for the chat message."
+          "description": "The anonymous UID of the user who sent the message."
         },
-        "chatRoomId": {
+        "username": {
           "type": "string",
-          "description": "Reference to the ChatRoom this message belongs to. (Relationship: ChatRoom 1:N ChatMessage)"
+          "description": "The AI-generated anonymous name of the sender."
         },
-        "senderId": {
+        "encryptedText": {
           "type": "string",
-          "description": "Unique identifier of the user who sent the message."
-        },
-        "content": {
-          "type": "string",
-          "description": "The actual text content of the message."
+          "description": "The end-to-end encrypted text content of the message."
         },
         "timestamp": {
-          "type": "string",
-          "description": "Timestamp indicating when the message was sent.",
-          "format": "date-time"
+          "type": "object",
+          "description": "Firestore server-side timestamp of when the message was sent."
         },
-        "isEdited": {
-          "type": "boolean",
-          "description": "Indicates whether the message has been edited after being sent."
+        "anonymized": {
+            "type": "boolean",
+            "description": "Indicates if the message content was altered by the AI anonymizer."
         },
-        "isDeleted": {
-          "type": "boolean",
-          "description": "Indicates whether the message has been deleted."
+        "file": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "type": {"type": "string"},
+                "data": {"type": "string"}
+            }
         }
       },
-      "required": [
-        "id",
-        "chatRoomId",
-        "senderId",
-        "content",
-        "timestamp"
-      ]
+      "required": ["userId", "username", "encryptedText", "timestamp"]
     },
     "ChatRoom": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -50,71 +43,37 @@
       "type": "object",
       "description": "Represents a chat room where users can exchange messages.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the chat room."
-        },
         "name": {
           "type": "string",
           "description": "Name of the chat room."
         },
-        "creationTimestamp": {
-          "type": "string",
-          "description": "Timestamp indicating when the chat room was created.",
-          "format": "date-time"
+        "createdAt": {
+          "type": "object",
+          "description": "Firestore server-side timestamp of when the room was created."
         },
         "region": {
           "type": "string",
           "description": "Geographic region the chat room is associated with."
         },
-        "userLimit": {
-          "type": "number",
-          "description": "Maximum number of users allowed in the chat room."
+        "isPublic": {
+            "type": "boolean",
+            "description": "Indicates if the room is a public lobby or a private room."
         }
       },
-      "required": [
-        "id",
-        "name",
-        "creationTimestamp",
-        "region"
-      ]
+      "required": ["name", "createdAt", "region", "isPublic"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["anonymous"]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/chatRooms",
-        "definition": {
-          "entityName": "ChatRoom",
-          "schema": {
-            "$ref": "#/backend/entities/ChatRoom"
-          },
-          "description": "Stores chat room metadata, including name, region, creation timestamp and user limit."
-        }
+      "/chatRooms/{chatRoomId}": {
+        "schema": { "$ref": "#/entities/ChatRoom" },
+        "description": "Stores chat room metadata, including name, region, and creation timestamp."
       },
-      {
-        "path": "/chatRooms/{chatRoomId}/messages",
-        "definition": {
-          "entityName": "ChatMessage",
-          "schema": {
-            "$ref": "#/backend/entities/ChatMessage"
-          },
-          "description": "Stores chat messages for a specific chat room. Each message includes senderId, content, and timestamp.",
-          "params": [
-            {
-              "name": "chatRoomId",
-              "description": "The unique identifier of the chat room."
-            }
-          ]
-        }
+      "/chatRooms/{chatRoomId}/messages/{messageId}": {
+        "schema": { "$ref": "#/entities/ChatMessage" },
+        "description": "Stores all messages for a specific chat room."
       }
-    ],
-    "reasoning": "The Firestore structure is designed to support anonymous, real-time chat functionality with a focus on privacy and region-specific chat rooms. Key considerations include:Authorization Independence, Structural Segregation, and clear Access Modeling.\n\n1.  **Chat Rooms:** Chat rooms are organized by region to facilitate localized communication. The `/chatRooms` collection stores basic chat room metadata (name, region, creation timestamp, user limit). To enforce the user limits, the user should call a backend function to add themselves to a chatroom, to prevent too many writes.\n\n2.  **Chat Messages:** Each chat room has a subcollection `/chatRooms/{chatRoomId}/messages` to store chat messages.  Each message includes `senderId`, `content`, and `timestamp`. The messages are end-to-end encrypted locally, making the content stored in Firestore unreadable without the appropriate key.  Consider setting up Cloud Functions to automatically delete messages after a configurable period to ensure the automatic message deletion requirement is met.\n\n**Authorization Independence:**\nBecause the `ChatRoom` documents do not contain authorization data (e.g., a list of users or membership), authorization checks are limited to ensuring the user is authenticated (anonymous auth is sufficient) before allowing them to read or write messages in that chat room. \n\n**QAPs (Rules are not Filters):**\nThe structure supports listing chat rooms by region using a simple collection query. The number of chatrooms should be limited to support performance. Rules can prevent unauthorized access to the messages within chat rooms, but they cannot effectively filter messages based on content or other criteria. This is handled by the local encryption and automatic deletion."
   }
 }

@@ -1,10 +1,12 @@
+import { FieldValue } from 'firebase/firestore';
+
 export interface Message {
   id: string;
   text: string;
   encryptedText: string;
   userId: string;
   username: string;
-  timestamp: number;
+  timestamp: any | FieldValue;
   anonymized: boolean;
   file?: {
     name: string;

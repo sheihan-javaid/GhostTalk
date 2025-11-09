@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react';
 import type { Message } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Shield, User, Paperclip, Download } from 'lucide-react';
+import { Shield, User, Paperclip, Download, File as FileIcon } from 'lucide-react';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Timestamp } from 'firebase/firestore';
 
 interface MessageListProps {
   messages: Message[];
@@ -19,7 +20,9 @@ function MessageItem({ message, isCurrentUser, showUsername }: { message: Messag
     ? 'bg-primary text-primary-foreground'
     : 'bg-secondary text-secondary-foreground';
   
-  const formattedTime = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formattedTime = message.timestamp instanceof Timestamp 
+    ? message.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
     <div 
@@ -52,11 +55,11 @@ function MessageItem({ message, isCurrentUser, showUsername }: { message: Messag
           <div className="mt-2">
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left h-auto p-2">
+                <Button variant="outline" className="w-full justify-start text-left h-auto p-2 bg-background/20 hover:bg-background/40">
                   <div className="flex items-center gap-2">
                     <Paperclip className="h-5 w-5" />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">{message.file.name}</span>
+                    <div className="flex flex-col overflow-hidden">
+                      <span className="text-sm font-medium truncate">{message.file.name}</span>
                        <span className="text-xs text-muted-foreground">Click to view</span>
                     </div>
                   </div>
@@ -66,11 +69,16 @@ function MessageItem({ message, isCurrentUser, showUsername }: { message: Messag
                 <DialogHeader>
                   <DialogTitle>{message.file.name}</DialogTitle>
                 </DialogHeader>
-                <div className="mt-4">
+                <div className="mt-4 flex items-center justify-center bg-muted/50 rounded-lg p-4 max-h-[70vh]">
                   {message.file.type.startsWith('image/') ? (
-                    <img src={message.file.data} alt={message.file.name} className="max-w-full h-auto rounded-md" />
+                    <img src={message.file.data} alt={message.file.name} className="max-w-full max-h-full object-contain h-auto rounded-md" />
+                  ) : message.file.type.startsWith('video/') ? (
+                    <video controls src={message.file.data} className="max-w-full max-h-full object-contain h-auto rounded-md" />
+                  ) : message.file.type.startsWith('audio/') ? (
+                    <audio controls src={message.file.data} className="w-full" />
                   ) : (
-                    <div className="p-4 bg-muted rounded-md text-center">
+                    <div className="p-4 bg-muted rounded-md text-center flex flex-col items-center gap-4">
+                      <FileIcon className="h-16 w-16 text-muted-foreground"/>
                       <p>Unsupported file type for preview.</p>
                        <a href={message.file.data} download={message.file.name}>
                         <Button className="mt-4">

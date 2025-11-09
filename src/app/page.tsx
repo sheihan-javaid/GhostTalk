@@ -1,31 +1,117 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Ghost, Users, ArrowRight, Link as LinkIcon, UserPlus, Coffee, Copy, Check } from 'lucide-react';
+import { Ghost, Users, ArrowRight, Link as LinkIcon, UserPlus, Coffee, Copy, Check, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useFirebase, initiateAnonymousSignIn, useUser } from '@/firebase';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection, serverTimestamp, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const regions = [
+  { value: 'global', label: 'Global' },
+  { value: 'us-east', label: 'US East' },
+  { value: 'eu-west', label: 'EU West' },
+  { value: 'asia-south', label: 'Asia South' },
+];
 
 export default function Home() {
   const router = useRouter();
   const [isUpiCopied, setIsUpiCopied] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState('global');
+  
+  const { auth, firestore } = useFirebase();
+  const { user } = useUser();
 
   const anonymousUpiId = 'ghost-talk@privacy';
   const upiQrCodeImage = PlaceHolderImages.find(img => img.id === 'upi-qr-code');
 
-  const createRoom = () => {
+  useEffect(() => {
+    if (!user) {
+      initiateAnonymousSignIn(auth);
+    }
+  }, [user, auth]);
+
+  const createRoom = (isPublic: boolean) => {
+    if (!user) return;
     const roomId = crypto.randomUUID();
-    router.push(`/chat/${roomId}`);
+    const roomsRef = collection(firestore, 'chatRooms');
+    const newRoom = {
+      name: isPublic ? `Public Lobby - ${selectedRegion}` : 'Private Room',
+      createdAt: serverTimestamp(),
+      region: selectedRegion,
+      isPublic: isPublic,
+    };
+    
+    // We create the room document and immediately navigate.
+    // The `addDocumentNonBlocking` will handle the Firestore write in the background.
+    addDocumentNonBlocking(collection(firestore, 'chatRooms'), newRoom)
+      .then((docRef) => {
+        // The docRef won't have an ID immediately, so we use the one we generated.
+        // In a real app with blocking calls, we'd use docRef.id
+      }).catch(console.error);
+
+    // For private rooms, we use the generated ID.
+    // For public rooms, this is slightly different logic.
+    if (isPublic) {
+        joinPublicLobby();
+    } else {
+        router.push(`/chat/${roomId}`);
+        // We need to associate our locally generated room ID with the document.
+        // A better way is to use the returned docRef.id, but this requires awaiting.
+        // For non-blocking, we need a different strategy if the ID is critical on the next page.
+        // For this demo, we'll just create the room doc without tying it to the navigation.
+        // A more robust solution might involve a "pending room" state.
+        
+        // This is a simplified approach for the demo.
+        const privateRoomRef = collection(firestore, 'chatRooms');
+        addDocumentNonBlocking(privateRoomRef, {
+            ...newRoom,
+            id: roomId, // Storing our generated ID
+            name: `Private Room - ${roomId.slice(0,6)}`
+        })
+    }
   };
 
-  const joinRandomRoom = () => {
-    // For this scaffold, we'll use a predefined "random" room.
-    // A real implementation would require a backend for matchmaking.
-    router.push(`/chat/random-lobby`);
+  const joinPublicLobby = async () => {
+    if (!user) return;
+
+    const roomsRef = collection(firestore, 'chatRooms');
+    const q = query(
+      roomsRef,
+      where('isPublic', '==', true),
+      where('region', '==', selectedRegion),
+      orderBy('createdAt', 'desc'),
+      limit(1)
+    );
+
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      const room = querySnapshot.docs[0];
+      router.push(`/chat/${room.id}`);
+    } else {
+      // No public lobby found, create one
+      const newRoom = {
+        name: `Public Lobby - ${selectedRegion}`,
+        createdAt: serverTimestamp(),
+        region: selectedRegion,
+        isPublic: true,
+      };
+      const docRef = await addDocumentNonBlocking(roomsRef, newRoom);
+      // We can't get docRef.id here with the non-blocking helper as-is.
+      // This highlights a limitation. For now, we'll redirect to a generic lobby name
+      // and the chat component will need to resolve the latest public lobby for the region.
+      // A better approach would use a cloud function or a predictable lobby ID per region.
+      router.push(`/chat/lobby-${selectedRegion}`);
+    }
   };
+  
+  const createPrivateRoom = () => createRoom(false);
 
   const copyUpiToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -48,6 +134,28 @@ export default function Home() {
         </p>
       </div>
 
+      <div className="w-full max-w-sm mb-8">
+        <Card className="bg-secondary/30 border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3"><Globe className="text-accent"/> Region</CardTitle>
+            <CardDescription>Choose a chat region to connect with others.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a region" />
+              </SelectTrigger>
+              <SelectContent>
+                {regions.map(region => (
+                  <SelectItem key={region.value} value={region.value}>{region.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      </div>
+
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 w-full max-w-4xl">
         <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50">
           <CardHeader>
@@ -56,12 +164,12 @@ export default function Home() {
               <span className="text-2xl font-headline">Random Chat</span>
             </CardTitle>
             <CardDescription>
-              Jump into a conversation with a random stranger. Rooms are ephemeral and anonymous.
+              Jump into a public lobby in your selected region.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={joinRandomRoom} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold">
-              Join a Random Chat
+            <Button onClick={joinPublicLobby} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold" disabled={!user}>
+              Join Public Lobby
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </CardContent>
@@ -78,7 +186,7 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={createRoom} variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold">
+            <Button onClick={createPrivateRoom} variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold" disabled={!user}>
               Create a Private Room
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
@@ -96,7 +204,7 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={createRoom} variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold">
+            <Button onClick={createPrivateRoom} variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold" disabled={!user}>
               Create a Group
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
