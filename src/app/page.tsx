@@ -14,16 +14,18 @@ import { collection, serverTimestamp, query, where, getDocs, limit, orderBy } fr
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const regions = [
-  { value: 'global', label: 'Global' },
-  { value: 'us-east', label: 'US East' },
-  { value: 'eu-west', label: 'EU West' },
-  { value: 'asia-south', label: 'Asia South' },
+  { value: 'north-america', label: 'North America' },
+  { value: 'south-america', label: 'South America' },
+  { value: 'europe', label: 'Europe' },
+  { value: 'africa', label: 'Africa' },
+  { value: 'asia', label: 'Asia' },
+  { value: 'oceania', label: 'Oceania' },
 ];
 
 export default function Home() {
   const router = useRouter();
   const [isUpiCopied, setIsUpiCopied] = useState(false);
-  const [selectedRegion, setSelectedRegion] = useState('global');
+  const [selectedRegion, setSelectedRegion] = useState('north-america');
   
   const { auth, firestore } = useFirebase();
   const { user } = useUser();
@@ -121,7 +123,28 @@ export default function Home() {
 
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 animate-in fade-in-0 duration-500">
+    <div className="relative flex flex-col items-center justify-center min-h-screen bg-background p-4 animate-in fade-in-0 duration-500">
+      
+      <div className="absolute top-4 right-4 w-full max-w-xs">
+        <Card className="bg-secondary/30 border-border">
+          <CardContent className="p-3">
+            <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+              <SelectTrigger className="border-0 focus:ring-0 focus:ring-offset-0">
+                <div className="flex items-center gap-2">
+                    <Globe className="text-accent h-4 w-4"/>
+                    <SelectValue placeholder="Select a region" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                {regions.map(region => (
+                  <SelectItem key={region.value} value={region.value}>{region.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="text-center mb-12">
         <div className="inline-block p-4 bg-primary rounded-full mb-4 shadow-lg shadow-primary/30">
           <Ghost className="h-12 w-12 text-primary-foreground" />
@@ -132,27 +155,6 @@ export default function Home() {
         <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
           A truly anonymous, secure, and private chat experience. No accounts. No logs. Just conversations.
         </p>
-      </div>
-
-      <div className="w-full max-w-sm mb-8">
-        <Card className="bg-secondary/30 border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3"><Globe className="text-accent"/> Region</CardTitle>
-            <CardDescription>Choose a chat region to connect with others.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a region" />
-              </SelectTrigger>
-              <SelectContent>
-                {regions.map(region => (
-                  <SelectItem key={region.value} value={region.value}>{region.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
       </div>
 
 
