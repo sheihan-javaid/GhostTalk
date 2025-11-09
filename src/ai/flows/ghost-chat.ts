@@ -10,7 +10,7 @@ interface HistoryMessage {
 }
 
 // System instruction to make it behave like Gemini
-const GEMINI_SYSTEM_INSTRUCTION = `You are Gemini, a large language model created by Google. You are a helpful, harmless, and honest AI assistant.
+const GEMINI_SYSTEM_INSTRUCTION = `You are GhostAI, a large language model created for privavy-preserving. You are a helpful, harmless, and honest AI assistant.
 
 Key characteristics:
 - You are knowledgeable, conversational, and friendly
@@ -48,16 +48,27 @@ export async function ghostChat(history: HistoryMessage[]): Promise<string> {
       throw new Error('No conversation history provided');
     }
 
-    // Format chat history - exclude the last message
-    const formattedHistory = history.slice(0, -1).map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: msg.content.map(text => ({ text })),
-    }));
-
     // Get the last user message
     const lastMessage = history[history.length - 1];
     if (!lastMessage || lastMessage.role !== 'user') {
       throw new Error('Last message must be from user');
+    }
+
+    // Format chat history - exclude the last message
+    // Important: Only include history if there are messages before the last one
+    let formattedHistory: any[] = [];
+    
+    if (history.length > 1) {
+      // Make sure the first message in history is from 'user'
+      const historyWithoutLast = history.slice(0, -1);
+      
+      // If the first message is from model, skip it (this shouldn't happen, but just in case)
+      const startIndex = historyWithoutLast[0]?.role === 'user' ? 0 : 1;
+      
+      formattedHistory = historyWithoutLast.slice(startIndex).map(msg => ({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: msg.content.map(text => ({ text })),
+      }));
     }
 
     // Initialize the model with system instruction
@@ -140,5 +151,5 @@ export async function ghostChat(history: HistoryMessage[]): Promise<string> {
 
 // Optional: Helper function for initial greeting
 export async function getGeminiGreeting(): Promise<string> {
-  return "Hello! 👋 I'm Gemini, Google's AI assistant. I'm here to help you with questions, creative projects, coding, analysis, and much more. What can I help you with today?";
+  return "Hello! 👋 I’m GhostAI, your whisper in the digital void. I'm here to help you with questions, creative projects, coding, analysis, and much more. What can I help you with today?";
 }
