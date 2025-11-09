@@ -54,11 +54,12 @@ export async function encrypt(text: string, recipientPublicKey: CryptoKey): Prom
   const ephemeralPublicKeyJwk = await crypto.subtle.exportKey('jwk', ephemeralKeyPair.publicKey);
   
   const packaged = {
-    ephemPubKey: ephemeralPublicKeyJwk,
+    ephemPubKey: ephemeralPublicKeyJwk, // Assign the object directly
     iv: ab2str(iv),
     ct: ab2str(ciphertext),
   };
 
+  // The entire package is stringified once here.
   return JSON.stringify(packaged);
 }
 
@@ -117,3 +118,4 @@ export async function decrypt(encryptedPackage: string): Promise<string> {
   const textDecoder = new TextDecoder();
   return textDecoder.decode(decryptedAb);
 }
+
