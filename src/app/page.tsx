@@ -276,14 +276,15 @@ export default function Home() {
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-4">
                     {qrCodeImage && (
-                        <Image 
-                            src={qrCodeImage.imageUrl}
-                            alt={qrCodeImage.description}
-                            width={250}
-                            height={250}
-                            data-ai-hint={qrCodeImage.imageHint}
-                            className="rounded-md"
-                        />
+                        <div className="relative w-64 h-64">
+                            <Image 
+                                src={qrCodeImage.imageUrl}
+                                alt={qrCodeImage.description}
+                                fill
+                                data-ai-hint={qrCodeImage.imageHint}
+                                className="rounded-md object-contain"
+                            />
+                        </div>
                     )}
                     <a 
                         href="https://razorpay.me/@mohammadsheihanjavaid"
@@ -306,6 +307,8 @@ export default function Home() {
     </div>
   );
 }
+
+    
 
     
 
