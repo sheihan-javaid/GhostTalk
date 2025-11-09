@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -28,7 +29,7 @@ const regions = [
 
 export default function Home() {
   const router = useRouter();
-  const [selectedRegion, setSelectedRegion] = useState('north-america');
+  const [selectedRegion, setSelectedRegion] = useState('asia');
   const [isCreateRoomDialogOpen, setIsCreateRoomDialogOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   
