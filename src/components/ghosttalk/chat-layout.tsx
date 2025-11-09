@@ -9,7 +9,7 @@ import MessageInput from './message-input';
 import ChatHeader from './chat-header';
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Loader2 } from 'lucide-react';
-import { useFirebase, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp } from 'firebase/firestore';
 import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
@@ -39,7 +39,9 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     const initUser = async () => {
       if (user && firestore) {
         const userDocRef = doc(firestore, 'users', user.uid);
-        const name = (await getDocs(query(collection(firestore, 'users'), where('uid', '==', user.uid)))).docs[0]?.data()?.anonymousName;
+        const nameQuery = query(collection(firestore, 'users'), where('uid', '==', user.uid), limit(1));
+        const userDocSnapshot = await getDocs(nameQuery);
+        const name = userDocSnapshot.docs[0]?.data()?.anonymousName;
 
         if (name) {
           setUserName(name);
@@ -59,6 +61,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     };
     initUser();
   }, [user, firestore]);
+  
 
   // Resolve dynamic lobby rooms
   useEffect(() => {
@@ -159,8 +162,6 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
             })
         }
       }
-      
-      const fileData = file ? { name: file.name, type: file.type, data: await file.text() } : undefined;
 
       const newMessage: Omit<ChatMessage, 'id'> = {
           senderId: user.uid,
@@ -168,8 +169,12 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
           text: textToSend,
           timestamp: serverTimestamp(),
           anonymized: shouldAnonymize && rawText !== textToSend,
-          file: fileData,
       };
+      
+      if (file) {
+        const fileData = { name: file.name, type: file.type, data: await file.text() };
+        newMessage.file = fileData;
+      }
 
       const messagesRef = collection(firestore, 'chatRooms', currentRoomId, 'messages');
       await addDocumentNonBlocking(messagesRef, newMessage);
