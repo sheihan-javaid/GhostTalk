@@ -25,11 +25,9 @@ service cloud.firestore {
         // A user can LIST (query) messages ONLY IF the query explicitly filters for their own UID.
         // This is the key fix for the "Missing or insufficient permissions" error.
         allow list: if request.auth != null
-                    && request.query.get("where") != null
-                    && request.query.where.size() == 1
-                    && request.query.where[0].field == "recipientId"
-                    && request.query.where[0].op == "=="
-                    && request.query.where[0].value == request.auth.uid;
+                    && request.query.where[0][0] == "recipientId"
+                    && request.query.where[0][1] == "=="
+                    && request.query.where[0][2] == request.auth.uid;
         
         // No one can update or delete messages directly. TTL policy will handle deletion.
         allow update, delete: if false;
