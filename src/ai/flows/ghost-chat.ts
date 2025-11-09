@@ -2,7 +2,6 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Gemini API with your key
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
 
 interface HistoryMessage {
@@ -10,45 +9,136 @@ interface HistoryMessage {
   content: string[];
 }
 
+// System instruction to make it behave like Gemini
+const GEMINI_SYSTEM_INSTRUCTION = `You are Gemini, a large language model created by Google. You are a helpful, harmless, and honest AI assistant.
+
+Key characteristics:
+- You are knowledgeable, conversational, and friendly
+- You provide clear, well-structured responses with proper formatting
+- You use markdown formatting (headers, bold, lists, code blocks) when appropriate
+- You're capable of creative writing, coding, analysis, and problem-solving
+- You acknowledge when you don't know something or when information might be outdated
+- You're respectful and avoid harmful, biased, or inappropriate content
+- You can engage in multi-turn conversations and remember context
+- You provide detailed explanations when asked, but stay concise when appropriate
+- You use emojis occasionally to make responses more engaging when contextually appropriate
+- You're built by Google and are part of the Gemini model family
+
+Tone:
+- Professional yet approachable
+- Enthusiastic about helping users
+- Clear and articulate
+- Encouraging and supportive
+
+Response style:
+- Use proper markdown formatting
+- Break complex information into digestible sections
+- Provide examples when helpful
+- Ask clarifying questions when needed
+- Be specific and actionable in advice`;
+
 export async function ghostChat(history: HistoryMessage[]): Promise<string> {
   try {
     if (!process.env.GOOGLE_API_KEY) {
-      throw new Error('GOOGLE_API_KEY is missing from environment variables.');
+      throw new Error('Missing GOOGLE_API_KEY');
     }
 
-    // Format chat history properly
-    const formattedHistory = history.map(msg => ({
-      role: msg.role,
+    // Validate history
+    if (!history || history.length === 0) {
+      throw new Error('No conversation history provided');
+    }
+
+    // Format chat history - exclude the last message
+    const formattedHistory = history.slice(0, -1).map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'model',
       parts: msg.content.map(text => ({ text })),
     }));
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-    // Get the last message (most recent user message)
-    const lastUserMessage = formattedHistory.pop();
-    if (!lastUserMessage) {
-      throw new Error('No user message found in history.');
+    // Get the last user message
+    const lastMessage = history[history.length - 1];
+    if (!lastMessage || lastMessage.role !== 'user') {
+      throw new Error('Last message must be from user');
     }
 
-    // Create a chat session with previous history
+    // Initialize the model with system instruction
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-1.5-flash',
+      systemInstruction: GEMINI_SYSTEM_INSTRUCTION,
+    });
+
+    // Start chat with enhanced config
     const chat = model.startChat({
       history: formattedHistory,
       generationConfig: {
-        temperature: 0.8,
-        maxOutputTokens: 256,
+        temperature: 0.9, // More creative and varied responses
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 2048, // Allow longer, more detailed responses
       },
+      safetySettings: [
+        {
+          category: 'HARM_CATEGORY_HARASSMENT',
+          threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+        },
+        {
+          category: 'HARM_CATEGORY_HATE_SPEECH',
+          threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+        },
+        {
+          category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+          threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+        },
+        {
+          category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+          threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+        },
+      ],
     });
 
-    // Send the last message
-    const result = await chat.sendMessage(lastUserMessage.parts);
-    const response = result.response;
-    const text = response.text();
+    // Send the last user message
+    const userMessage = lastMessage.content.join(' ');
+    const result = await chat.sendMessage(userMessage);
 
-    return text || '...';
+    // Get response text
+    const response = result?.response;
+    const text = response?.text?.();
 
-  } catch (err) {
-    console.error('Ghost AI Error:', err instanceof Error ? err.message : err);
-    console.error(err);
-    return 'Something went wrong 👻';
+    if (!text) {
+      throw new Error('Empty response from Gemini');
+    }
+
+    return text;
+    
+  } catch (err: any) {
+    console.error('Gemini AI Error:', {
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+    });
+
+    // Provide helpful error messages
+    if (err.message?.includes('API key')) {
+      return '🔑 API key error. Please check your Google API key configuration.';
+    }
+    
+    if (err.message?.includes('quota')) {
+      return '⚠️ API quota exceeded. Please try again later or check your Google Cloud quota.';
+    }
+
+    if (err.message?.includes('safety')) {
+      return '🛡️ Response blocked due to safety filters. Please try rephrasing your message.';
+    }
+
+    // Return specific error for debugging in development
+    if (process.env.NODE_ENV === 'development') {
+      return `❌ Error: ${err.message}`;
+    }
+
+    return '❌ Sorry, I encountered an error. Please try again.';
   }
+}
+
+// Optional: Helper function for initial greeting
+export async function getGeminiGreeting(): Promise<string> {
+  return "Hello! 👋 I'm Gemini, Google's AI assistant. I'm here to help you with questions, creative projects, coding, analysis, and much more. What can I help you with today?";
 }

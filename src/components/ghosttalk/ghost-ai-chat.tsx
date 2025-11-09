@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ghostChat } from '@/ai/flows/ghost-chat';
+import { ghostChat, getGeminiGreeting } from '@/ai/flows/ghost-chat';
 import { Loader2, Bot, User } from 'lucide-react';
 import Link from 'next/link';
 
@@ -16,7 +16,16 @@ interface ChatMessage {
 export default function GhostAiChat() {
     const [history, setHistory] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchGreeting = async () => {
+            const greeting = await getGeminiGreeting();
+            setHistory([{ role: 'model', content: [greeting] }]);
+            setIsLoading(false);
+        };
+        fetchGreeting();
+    }, []);
 
     const handleSend = async () => {
         if (!input.trim()) return;
@@ -55,7 +64,7 @@ export default function GhostAiChat() {
                             {msg.role === 'user' && <User className="h-6 w-6 text-accent shrink-0"/>}
                         </div>
                     ))}
-                    {isLoading && (
+                    {isLoading && history.length > 0 && (
                          <div className="flex gap-3 justify-start">
                              <Bot className="h-6 w-6 text-accent shrink-0"/>
                              <div className="p-3 rounded-lg bg-background flex items-center">
