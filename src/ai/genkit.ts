@@ -1,5 +1,3 @@
-'use server';
-
 import { genkit, AIMiddleware } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 
