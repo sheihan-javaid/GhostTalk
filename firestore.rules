@@ -2,34 +2,33 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Rules for chat rooms
+    // Chat rooms collection
     match /chatRooms/{roomId} {
-      // Anyone can see the list of rooms or read a specific room's metadata.
+      // Anyone (even anonymous/custom auth) can read chat room metadata
       allow read, list: if true;
-      // Only authenticated users can create new chat rooms.
+
+      // Only authenticated users can create new chat rooms
       allow create: if request.auth != null;
-      // Authenticated users can update a room, but ONLY to add/update their public key.
-      // This is crucial for the end-to-end encryption to work.
-      allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['publicKeys']);
-      // No one is allowed to delete a chat room.
+
+      // Authenticated users can update a room (e.g., public keys for E2EE)
+      allow update: if request.auth != null
+                    && request.resource.data.diff(resource.data)
+                    .affectedKeys().hasOnly(['publicKeys']);
+
+      // No one can delete a chat room
       allow delete: if false;
 
-      // Rules for messages within a chat room
+      // Messages subcollection
       match /messages/{messageId} {
-        // Any authenticated user can create a message.
+
+        // Authenticated users can create messages
         allow create: if request.auth != null;
 
-        // A user can GET a single message document only if they are the recipient.
-        allow get: if request.auth != null && resource.data.recipientId == request.auth.uid;
-        
-        // A user can LIST (query) messages ONLY IF the query explicitly filters for their own UID.
-        // This rule inspects the query itself to ensure it's secure.
-        allow list: if request.auth != null
-                    && request.query.where[0][0] == "recipientId"
-                    && request.query.where[0][1] == "=="
-                    && request.query.where[0][2] == request.auth.uid;
-        
-        // No one can update or delete messages directly. TTL policy will handle deletion.
+        // Authenticated users can read messages in this room
+        // You can strengthen this later with room membership validation
+        allow read, list: if request.auth != null;
+
+        // Disable update or delete (handled by server-side TTL)
         allow update, delete: if false;
       }
     }
