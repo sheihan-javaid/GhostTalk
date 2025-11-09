@@ -11,7 +11,7 @@ import ChatHeader from './chat-header';
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Loader2 } from 'lucide-react';
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { decrypt, encrypt } from '@/lib/crypto';
 
@@ -55,15 +55,24 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
         if (!querySnapshot.empty) {
           setCurrentRoomId(querySnapshot.docs[0].id);
         } else {
-          // Handle case where lobby doesn't exist, maybe redirect or show error
-          console.error(`No public lobby found for region: ${region}`);
+           // No public lobby found, create one
+            const newRoom = {
+                name: `Public Lobby - ${region}`,
+                createdAt: serverTimestamp(),
+                region: region,
+                isPublic: true,
+            };
+            const docRef = await addDoc(roomsRef, newRoom);
+            setCurrentRoomId(docRef.id);
         }
         setIsRoomLoading(false);
       } else {
         setIsRoomLoading(false);
       }
     };
-    resolveLobby();
+    if (firestore) {
+      resolveLobby();
+    }
   }, [initialRoomId, firestore]);
 
   // Generate user's anonymous name for the session
@@ -84,7 +93,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
   
   // Memoize the Firestore query for messages
   const messagesQuery = useMemoFirebase(() => {
-    if (!currentRoomId || isRoomLoading) return null;
+    if (!currentRoomId || isRoomLoading || !firestore) return null;
     return query(collection(firestore, 'chatRooms', currentRoomId, 'messages'), orderBy('timestamp', 'asc'));
   }, [firestore, currentRoomId, isRoomLoading]);
 
@@ -114,7 +123,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
 
 
   const handleSendMessage = useCallback(async (rawText: string, shouldAnonymize: boolean, file?: File) => {
-    if ((!rawText.trim() && !file) || isSending || !user || !userName || !currentRoomId) return;
+    if ((!rawText.trim() && !file) || isSending || !user || !userName || !currentRoomId || !firestore) return;
     setIsSending(true);
 
     try {
@@ -216,3 +225,5 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
     </div>
   );
 }
+
+    

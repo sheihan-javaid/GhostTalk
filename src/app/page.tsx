@@ -10,7 +10,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useState, useEffect } from 'react';
 import { useFirebase, initiateAnonymousSignIn, useUser } from '@/firebase';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, serverTimestamp, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
+import { collection, serverTimestamp, query, where, getDocs, limit, orderBy, addDoc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const regions = [
@@ -39,44 +39,28 @@ export default function Home() {
     }
   }, [user, auth]);
 
-  const createRoom = (isPublic: boolean) => {
+  const createRoom = async (isPublic: boolean) => {
     if (!user) return;
-    const roomId = crypto.randomUUID();
-    const roomsRef = collection(firestore, 'chatRooms');
-    const newRoom = {
-      name: isPublic ? `Public Lobby - ${selectedRegion}` : 'Private Room',
-      createdAt: serverTimestamp(),
-      region: selectedRegion,
-      isPublic: isPublic,
-    };
-    
-    // We create the room document and immediately navigate.
-    // The `addDocumentNonBlocking` will handle the Firestore write in the background.
-    addDocumentNonBlocking(collection(firestore, 'chatRooms'), newRoom)
-      .then((docRef) => {
-        // The docRef won't have an ID immediately, so we use the one we generated.
-        // In a real app with blocking calls, we'd use docRef.id
-      }).catch(console.error);
 
-    // For private rooms, we use the generated ID.
-    // For public rooms, this is slightly different logic.
     if (isPublic) {
-        joinPublicLobby();
-    } else {
-        router.push(`/chat/${roomId}`);
-        // We need to associate our locally generated room ID with the document.
-        // A better way is to use the returned docRef.id, but this requires awaiting.
-        // For non-blocking, we need a different strategy if the ID is critical on the next page.
-        // For this demo, we'll just create the room doc without tying it to the navigation.
-        // A more robust solution might involve a "pending room" state.
-        
-        // This is a simplified approach for the demo.
-        const privateRoomRef = collection(firestore, 'chatRooms');
-        addDocumentNonBlocking(privateRoomRef, {
-            ...newRoom,
-            id: roomId, // Storing our generated ID
-            name: `Private Room - ${roomId.slice(0,6)}`
-        })
+        await joinPublicLobby();
+        return;
+    }
+
+    // For private rooms, create a new room with a unique ID
+    const newRoomData = {
+        name: `Private Room`,
+        createdAt: serverTimestamp(),
+        region: selectedRegion,
+        isPublic: false,
+    };
+
+    try {
+        const roomsRef = collection(firestore, 'chatRooms');
+        const docRef = await addDoc(roomsRef, newRoomData);
+        router.push(`/chat/${docRef.id}`);
+    } catch (error) {
+        console.error("Error creating private room:", error);
     }
   };
 
@@ -104,12 +88,12 @@ export default function Home() {
         region: selectedRegion,
         isPublic: true,
       };
-      const docRef = await addDocumentNonBlocking(roomsRef, newRoom);
-      // We can't get docRef.id here with the non-blocking helper as-is.
-      // This highlights a limitation. For now, we'll redirect to a generic lobby name
-      // and the chat component will need to resolve the latest public lobby for the region.
-      // A better approach would use a cloud function or a predictable lobby ID per region.
-      router.push(`/chat/lobby-${selectedRegion}`);
+      try {
+        const docRef = await addDoc(roomsRef, newRoom);
+        router.push(`/chat/${docRef.id}`);
+      } catch (error) {
+        console.error("Error creating public lobby:", error);
+      }
     }
   };
   
@@ -125,11 +109,23 @@ export default function Home() {
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen bg-background p-4 animate-in fade-in-0 duration-500">
       
-      <div className="absolute top-4 right-4 w-full max-w-xs">
+      <div className="text-center mb-8">
+        <div className="inline-block p-4 bg-primary rounded-full mb-4 shadow-lg shadow-primary/30">
+          <Ghost className="h-12 w-12 text-primary-foreground" />
+        </div>
+        <h1 className="text-5xl md:text-6xl font-bold text-foreground font-headline">
+          Welcome to <span className="text-accent">GhostTalk</span>
+        </h1>
+        <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+          A truly anonymous, secure, and private chat experience. No accounts. No logs. Just conversations.
+        </p>
+      </div>
+
+      <div className="w-full max-w-sm mb-12">
         <Card className="bg-secondary/30 border-border">
           <CardContent className="p-3">
             <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-              <SelectTrigger className="border-0 focus:ring-0 focus:ring-offset-0">
+              <SelectTrigger className="w-full border-0 focus:ring-0 focus:ring-offset-0">
                 <div className="flex items-center gap-2">
                     <Globe className="text-accent h-4 w-4"/>
                     <SelectValue placeholder="Select a region" />
@@ -143,18 +139,6 @@ export default function Home() {
             </Select>
           </CardContent>
         </Card>
-      </div>
-
-      <div className="text-center mb-12">
-        <div className="inline-block p-4 bg-primary rounded-full mb-4 shadow-lg shadow-primary/30">
-          <Ghost className="h-12 w-12 text-primary-foreground" />
-        </div>
-        <h1 className="text-5xl md:text-6xl font-bold text-foreground font-headline">
-          Welcome to <span className="text-accent">GhostTalk</span>
-        </h1>
-        <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-          A truly anonymous, secure, and private chat experience. No accounts. No logs. Just conversations.
-        </p>
       </div>
 
 
@@ -268,3 +252,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
