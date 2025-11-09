@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Ghost, Users, ArrowRight, Link as LinkIcon, Coffee, Globe, Zap, MessageSquareQuote, BarChart, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogTrigger, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useFirebase, initiateAnonymousSignIn, useUser } from '@/firebase';
@@ -87,6 +87,9 @@ export default function Home() {
   const handleLoungeFeatureClick = (featurePath: string) => {
     router.push(`/lounge/${featurePath}`);
   }
+  
+  const qrCodeDataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAbFBMVEX///8AAADFxcXf39/8/Pza2tqOjo7l5eWdnZ1bW1uJiYlOTk7W1tZ6enpsbGyioqI4ODhJSUlSUlJwcHC+vr6rq6tGRkaAgIBkZGTz8/NnZ2cSEhJdXV0vLy8gICBlZWUqKiosLCwiIiLz3HrUAAAA/UlEQVR4nO3dSW7DMAwFUPOLtlqtVqslGyT//8d2BEgaQE1cOHPPkTHg66g2YwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACA/+d9L7hFaj9cOLHdu9Xnw08t9+VP2Fv1k1LVdrunp57V263WPSLa3W75U/YyPj8abWkXq7DR2rC4Vnaw2Vq32NpaN/b2G/bY3BvH2g5s93w/Do1daQdTXg0bqwy7XQ3bqw6n3g4sLw+bqw4n3g4sLw97qw4n3g4sLw97qw7H3g4sLw97qw7H3g4sLw97qw7H3g4sLw97qw7H3g4sLw+b/R243f/rU4jH7d3+JgEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAf/MF1/sD/eI6pXwAAAAASUVORK5CYII=";
+
 
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen bg-background p-4 animate-in fade-in-0 duration-500">
@@ -272,10 +275,12 @@ export default function Home() {
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-4">
                   <div className="p-4 bg-white rounded-lg">
-                    <img
-                        src="https://i.ibb.co/YjV4jFj/qr-code.png"
+                    <Image
+                        src={qrCodeDataUrl}
                         alt="QR Code for anonymous donation"
-                        className="h-64 w-64 object-contain"
+                        width={256}
+                        height={256}
+                        className="object-contain"
                     />
                   </div>
                   <p className="text-sm text-muted-foreground">Scan to donate anonymously</p>
@@ -300,5 +305,4 @@ export default function Home() {
     </div>
   );
 
-    
-
+}
