@@ -183,11 +183,11 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
               anonymized: msg.anonymized,
               file: decryptedPayload.file,
             };
-          } catch (e) {
-            console.error('Decryption error:', e);
+          } catch (e: any) {
+            console.error(`Decryption error for message ID ${msg.id}:`, e);
             return { // Return a message indicating failure
               id: msg.id,
-              text: '[Decryption Failed]',
+              text: '[Decryption Failed - Message may be corrupt]',
               userId: msg.senderId,
               username: 'System',
               timestamp: msg.timestamp,
