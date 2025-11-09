@@ -1,8 +1,8 @@
 'use server';
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { HfInference } from '@huggingface/inference';
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
+const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
 interface ChatMessage {
   role: 'user' | 'model';
@@ -10,38 +10,24 @@ interface ChatMessage {
 }
 
 export async function ghostChat(history: ChatMessage[]): Promise<string> {
+  const modelId = "mistralai/Mistral-7B-Instruct-v0.2";
+
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-    // The Gemini API requires that the history starts with a 'user' role.
-    // If the first message is from the 'model' (our greeting), we must skip it.
-    const startIndex = history.length > 0 && history[0].role === 'model' ? 1 : 0;
-    const processableHistory = history.slice(startIndex);
-
-    // If after slicing, there are no messages left to process, we can't call the API.
-    if (processableHistory.length === 0) {
-      return "I need a message from you to get started!";
-    }
-
-    const formattedHistory = processableHistory.map(msg => ({
-      role: msg.role,
-      parts: msg.content.map(text => ({ text })),
+    const hfHistory = history.map(msg => ({
+        role: msg.role === 'model' ? 'assistant' as const : 'user' as const,
+        content: msg.content[0]
     }));
-    
-    const result = await model.generateContent({
-      contents: formattedHistory,
-      generationConfig: {
-        temperature: 0.8,
-        maxOutputTokens: 512,
-      },
+
+    const response = await hf.chatCompletion({
+      model: modelId,
+      messages: hfHistory,
+      max_tokens: 512,
+      temperature: 0.8,
     });
 
-    const text = result.response.text();
-
-    return text || "👻 I’m GhostAI — but I couldn’t quite catch that.";
+    return response.choices[0].message.content || "👻 I’m GhostAI — but I couldn’t quite catch that.";
   } catch (err: any) {
-    console.error('Ghost AI Error:', err instanceof Error ? err.message : err);
-    console.error(err);
+    console.error('Ghost AI Error (Hugging Face):', err);
     return '❌ An error occurred. Please check the server console for details.';
   }
 }

@@ -25,9 +25,9 @@ export default function ApiTestPage() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-8">
       <Link href="/" className="absolute top-4 left-4 text-sm text-muted-foreground hover:text-accent">&larr; Back to Home</Link>
       <div className="max-w-2xl w-full text-center">
-        <h1 className="text-3xl font-bold text-accent mb-4">Gemini API Key Test</h1>
+        <h1 className="text-3xl font-bold text-accent mb-4">Hugging Face API Key Test</h1>
         <p className="text-muted-foreground mb-8">
-          This page makes a single, simple request to the Gemini API using Genkit to verify if your API key is configured correctly and the API is enabled.
+          This page makes a single, simple request to the Hugging Face Inference API to verify if your API key is configured correctly.
         </p>
         <div className="border border-border rounded-lg p-6 bg-secondary/30 min-h-[200px] flex flex-col items-center justify-center">
           {isLoading ? (

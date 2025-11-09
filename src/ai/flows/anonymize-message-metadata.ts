@@ -1,9 +1,8 @@
 'use server';
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { HfInference } from '@huggingface/inference';
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
 export interface AnonymizeMessageInput {
   message: string;
@@ -15,28 +14,30 @@ export interface AnonymizeMessageOutput {
 
 export async function anonymizeMessage(input: AnonymizeMessageInput): Promise<AnonymizeMessageOutput> {
   const prompt = `You are an AI responsible for anonymizing messages by removing or altering identifiable metadata.
-  Your goal is to protect the user's identity while preserving the message's content and meaning.
+Your goal is to protect the user's identity while preserving the message's content and meaning.
+Analyze the following message and strip any information that could reveal the sender's identity, location, or other personal details like names, emails, addresses.
+Rephrase the message to make it less identifiable. If no personal metadata is detected, return the original message.
 
-  Analyze the following message and strip any information that could reveal the sender's identity, location, or other personal details.
-  This includes but is not limited to names, email addresses, IP addresses, location data, and unique identifiers.
+Message: "${input.message}"
 
-  Message: ${input.message}
-
-  Return only the anonymized message as a JSON object with a single key "anonymizedMessage". If no personal metadata is detected, return the original message.
-  Consider also to rephrase the message to make it less identifiable.
-  Example response for "My name is John and I live at 123 Main St.": {"anonymizedMessage": "Someone mentioned they live on a main street."}
-  `;
+Anonymized Message:`;
 
   try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    // In a real scenario, you'd want more robust parsing
-    const parsed = JSON.parse(text);
-    return { anonymizedMessage: parsed.anonymizedMessage || input.message };
+    const result = await hf.textGeneration({
+      model: 'mistralai/Mistral-7B-Instruct-v0.2',
+      inputs: prompt,
+      parameters: {
+        max_new_tokens: 150,
+        temperature: 0.7,
+        return_full_text: false,
+      },
+    });
+
+    const anonymized = result.generated_text.trim();
+    return { anonymizedMessage: anonymized || input.message };
+
   } catch (error) {
-    console.error('Failed to anonymize message:', error);
-    // Fallback to original message on error
+    console.error('Failed to anonymize message with Hugging Face:', error);
     return { anonymizedMessage: input.message };
   }
 }

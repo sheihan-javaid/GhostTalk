@@ -1,29 +1,34 @@
 'use server';
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { HfInference } from '@huggingface/inference';
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
 export interface GenerateAnonymousNameOutput {
   name: string;
 }
 
 export async function generateAnonymousName(): Promise<GenerateAnonymousNameOutput> {
-  const prompt = `You are an AI that generates creative, anonymous usernames.
-  The usernames must be dark, brutal, with adult and sexual humor themes.
-  Generate a single username. Do not include any other text or explanation.
-  Return the name as a JSON object with a single key "name".
-  Example: {"name": "VoidGazer"}
-  `;
+  const prompt = `Generate one creative, anonymous username. The username should be dark, brutal, or have adult humor themes.
+Return only the username, with no explanation or extra text.
+Example: VoidGazer
+Username:`;
   try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    const parsed = JSON.parse(text);
-    return { name: parsed.name || 'Anonymous' };
+    const result = await hf.textGeneration({
+      model: 'mistralai/Mistral-7B-Instruct-v0.2',
+      inputs: prompt,
+      parameters: {
+        max_new_tokens: 10,
+        temperature: 1.2,
+        return_full_text: false,
+      },
+    });
+    
+    // Clean up response to get just the name
+    const name = result.generated_text.trim().split('\n')[0].replace(/"/g, '');
+    return { name: name || 'Anonymous' };
   } catch (error) {
-    console.error('Failed to generate anonymous name:', error);
+    console.error('Failed to generate anonymous name with Hugging Face:', error);
     return { name: 'Anonymous' + Math.floor(Math.random() * 1000) };
   }
 }
