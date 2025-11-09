@@ -1,18 +1,36 @@
 'use server';
 
-import { ai } from '@/ai/genkit';
-import { MessageData, generate } from 'genkit/ai';
+import OpenAI from 'openai';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 
-export async function ghostChat(history: MessageData[]): Promise<string> {
+const openai = new OpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
+
+// The message format for the OpenAI library is different from Genkit's MessageData
+// This function maps from one to the other.
+function mapHistoryToOpenAI(history: any[]): ChatCompletionMessageParam[] {
+    return history.map(msg => {
+        return {
+            role: msg.role === 'model' ? 'assistant' : 'user',
+            content: msg.content[0].text,
+        };
+    });
+}
+
+export async function ghostChat(history: any[]): Promise<string> {
     try {
-        const llmResponse = await ai.generate({
-            prompt: history[history.length - 1].content[0].text,
-            history: history.slice(0, -1),
-        });
+        const openAIHistory = mapHistoryToOpenAI(history);
 
-        return llmResponse.text || "👻 I’m GhostAI — but I couldn’t quite catch that.";
+        const completion = await openai.chat.completions.create({
+            model: 'mistralai/mistral-7b-instruct:free',
+            messages: openAIHistory,
+        });
+        
+        return completion.choices[0].message.content || "👻 I’m GhostAI — but I couldn’t quite catch that.";
     } catch (err: any) {
-        console.error('Ghost AI Error (Genkit):', err);
+        console.error('Ghost AI Error (OpenRouter):', err);
         return '❌ An error occurred. Please check the server console for details.';
     }
 }

@@ -1,25 +1,27 @@
 'use server';
 
-import { ai } from '@/ai/genkit';
-import { z } from 'zod';
+import OpenAI from 'openai';
 
-
-const generateNamePrompt = ai.definePrompt({
-    name: 'generateNamePrompt',
-    prompt: `Generate one creative, anonymous username. The username should be dark, brutal, or have adult humor themes.
-Return only the username, with no explanation or extra text.
-Example: VoidGazer
-Username:`
+const openai = new OpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
 });
-
 
 export async function generateAnonymousName(): Promise<{ name: string }> {
     try {
-        const llmResponse = await generateNamePrompt();
-        const name = llmResponse.text.trim().split('\n')[0].replace(/"/g, '');
-        return { name: name || 'Anonymous' };
+        const completion = await openai.chat.completions.create({
+            model: 'mistralai/mistral-7b-instruct:free',
+            messages: [{ role: 'user', content: `Generate one creative, anonymous username. The username should be dark, brutal, or have adult humor themes.
+Return only the username, with no explanation or extra text.
+Example: VoidGazer` }],
+            max_tokens: 20,
+            temperature: 1.2,
+        });
+
+        const name = completion.choices[0].message.content?.trim().replace(/"/g, '') || 'Anonymous';
+        return { name };
     } catch (error) {
-        console.error('Failed to generate anonymous name with Genkit:', error);
+        console.error('Failed to generate anonymous name with OpenRouter:', error);
         return { name: 'Anonymous' + Math.floor(Math.random() * 1000) };
     }
 }

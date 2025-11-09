@@ -303,7 +303,7 @@ export default function Home() {
         <p>No data is ever stored on our servers.</p>
         <p className="mt-4">
           <Link href="/api-test" className="underline hover:text-accent">
-            Test Gemini API Key
+            Test API Key
           </Link>
         </p>
       </footer>

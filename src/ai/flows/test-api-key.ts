@@ -1,30 +1,39 @@
 'use server';
 
-import { ai } from '@/ai/genkit';
+import OpenAI from 'openai';
 
 export async function testApiKey(): Promise<string> {
   try {
-    if (!process.env.GOOGLE_API_KEY) {
-      return 'Error: Missing GOOGLE_API_KEY in the .env file.';
+    if (!process.env.OPENROUTER_API_KEY) {
+      return 'Error: Missing OPENROUTER_API_KEY in the .env file.';
     }
 
-    const response = await ai.generate({
-      model: 'gemini-1.5-flash',
-      prompt: "Hello! If you can see this, respond with a single word: 'Success!'",
+    const openai = new OpenAI({
+        baseURL: 'https://openrouter.ai/api/v1',
+        apiKey: process.env.OPENROUTER_API_KEY,
     });
+
+    const completion = await openai.chat.completions.create({
+      model: 'mistralai/mistral-7b-instruct:free',
+      messages: [
+        { role: 'user', content: "Hello! If you can see this, respond with a single word: 'Success!'" },
+      ],
+    });
+
+    const response = completion.choices[0].message.content;
     
-    return `Success! API Response for model gemini-1.5-flash: "${response.text}"`;
+    return `Success! API Response from OpenRouter (mistral-7b-instruct): "${response}"`;
     
   } catch (err: any) {
-    console.error('API Key Test Error (Genkit):', err);
-    let errorMessage = `Error: The API call failed.
+    console.error('API Key Test Error (OpenRouter):', err);
+    let errorMessage = `Error: The API call to OpenRouter failed.
 ---
 Message: ${err.message}
 ---
-This usually means the API key is invalid, has restrictions, or the API is not enabled in your Google Cloud project for "generativeai.googleapis.com".`;
+This usually means your OpenRouter API key is invalid or has insufficient credits.`;
     
-    if (err.message.includes('permission denied')) {
-        errorMessage += '\n\nIt looks like a "permission denied" error. Please ensure billing is enabled for your Google Cloud project.';
+    if (err.status === 401) {
+        errorMessage += '\n\nIt looks like an authentication error (401). Please double-check your API key in the .env file.';
     }
     
     return errorMessage;
