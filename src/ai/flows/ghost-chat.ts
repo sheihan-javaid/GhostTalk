@@ -3,32 +3,34 @@
 /**
  * @fileOverview A Genkit flow for a simple, stateless AI chat.
  *
- * - ghostChat - A function that returns a response from the AI.
+ * ghostChat — returns an ephemeral AI response (no state, no logs, no storage).
  */
 
-import {ai} from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
+import { Part } from 'genkit';
 
-// This defines the structure of a single message in the chat history, as received from the client.
+// Message structure
 interface HistoryMessage {
   role: 'user' | 'model';
   content: string[];
 }
 
 export async function ghostChat(history: HistoryMessage[]): Promise<string> {
-  // Transform the incoming history to the format Genkit's `generate` function expects for chat history.
-  // The prompt should be an array of { role: string, content: Part[] }.
-  const genkitHistory = history.map(msg => ({
+  // Convert your messages into a Genkit-compatible chat prompt
+  const genkitHistory = history.map((msg) => ({
     role: msg.role,
-    content: msg.content.map(c => ({ text: c })),
+    parts: msg.content.map((c) => Part.text(c)), // ✅ use Part.text() instead of raw objects
   }));
 
+  // Generate AI response
   const response = await ai.generate({
     model: 'googleai/gemini-2.5-flash',
-    prompt: genkitHistory,
+    messages: genkitHistory, // ✅ use messages, not prompt
     config: {
       temperature: 0.8,
     },
   });
 
-  return response.text;
+  // Return the model’s text output safely
+  return response.output[0]?.content[0]?.text ?? '👻 The Ghost is silent...';
 }
