@@ -36,5 +36,5 @@ export async function ghostChat(history: any[]): Promise<string> {
 }
 
 export async function getGhostAIGreeting(): Promise<string> {
-  return "👻 Hey, I’m GhostAI — your privacy-first chat that vanishes like a whisper. What’s on your mind?";
+  return "Hello! 👋 I’m GhostAI, your whisper in the digital void. I'm here to help you with questions, creative projects, coding, analysis, and much more without leaving any traces. What can I help you with today?";
 }
