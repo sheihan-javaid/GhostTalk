@@ -1,7 +1,8 @@
 'use server';
 
-import { GoogleGenerativeAI, Content } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
+// Initialize Gemini with your API key from environment variable
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
 
 interface HistoryMessage {
@@ -11,20 +12,26 @@ interface HistoryMessage {
 
 export async function ghostChat(history: HistoryMessage[]): Promise<string> {
   try {
-    // The entire history, including the last user message, is needed for context.
-    const formattedHistory: Content[] = history.map(msg => ({
-      role: msg.role,
+    if (!process.env.GOOGLE_API_KEY) {
+      throw new Error('Missing GOOGLE_API_KEY');
+    }
+
+    // Format chat history properly for Gemini
+    const formattedHistory = history.map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'model',
       parts: msg.content.map(text => ({ text })),
     }));
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-    // The last message is part of the history, so we pop it to send it.
+    // Extract last user message (Gemini expects the new input separately)
     const lastUserMessage = formattedHistory.pop();
-    if (!lastUserMessage) {
-        return 'Could not process your message.';
+    if (!lastUserMessage || !lastUserMessage.parts?.length) {
+      throw new Error('No valid user message found');
     }
 
+    // Initialize the model
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    // Start a new chat session
     const chat = model.startChat({
       history: formattedHistory,
       generationConfig: {
@@ -33,14 +40,14 @@ export async function ghostChat(history: HistoryMessage[]): Promise<string> {
       },
     });
 
-    // Send the last user message to the chat session.
+    // Send user’s latest message
     const result = await chat.sendMessage(lastUserMessage.parts);
-    const response = result.response;
-    const text = response.text();
 
-    return text || '...';
-  } catch (err) {
-    console.error('Ghost AI Error:', err);
+    // Ensure valid response text
+    const text = result?.response?.text?.() || '...';
+    return text;
+  } catch (err: any) {
+    console.error('Ghost AI Error:', err.message || err);
     return 'Something went wrong 👻';
   }
 }
