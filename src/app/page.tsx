@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Ghost, Users, ArrowRight, Link as LinkIcon, UserPlus, Coffee, Copy, Check, Globe } from 'lucide-react';
+import { Ghost, Users, ArrowRight, Link as LinkIcon, UserPlus, Coffee, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react';
 import { useFirebase, initiateAnonymousSignIn, useUser } from '@/firebase';
 import { collection, serverTimestamp, query, where, getDocs, limit, addDoc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const regions = [
   { value: 'north-america', label: 'North America' },
@@ -26,6 +27,7 @@ export default function Home() {
   
   const { auth, firestore } = useFirebase();
   const { user } = useUser();
+  const upiQrCodeImage = PlaceHolderImages.find(img => img.id === 'upi-qr-code');
 
 
   useEffect(() => {
@@ -210,6 +212,14 @@ export default function Home() {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-4">
+                    {upiQrCodeImage && <Image 
+                        src={upiQrCodeImage.imageUrl}
+                        alt={upiQrCodeImage.description}
+                        width={200}
+                        height={200}
+                        data-ai-hint={upiQrCodeImage.imageHint}
+                        className="rounded-md"
+                    />}
                     <p className="text-sm text-muted-foreground">You can support us anonymously via the link below:</p>
                     <a 
                         href="https://razorpay.me/@mohammadsheihanjavaid"
