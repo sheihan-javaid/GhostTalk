@@ -10,18 +10,6 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == userId;
       // A user can only update their own profile
       allow update: if request.auth != null && request.auth.uid == userId;
-
-      // ===== User Inbox Subcollection =====
-      match /inbox/{messageId} {
-        // A user can only read from their own inbox
-        allow get, list: if request.auth != null && request.auth.uid == userId;
-
-        // Any authenticated user can write to another user's inbox (i.e., send a message)
-        allow create: if request.auth != null;
-
-        // Nobody can update or delete inbox messages directly
-        allow update, delete: if false;
-      }
     }
 
     // ===== Chat Rooms Collection =====
@@ -32,12 +20,21 @@ service cloud.firestore {
       // Only authenticated users can create new chat rooms
       allow create: if request.auth != null;
 
-      // Authenticated users can update a room's participants list
-      allow update: if request.auth != null
-                    && request.resource.data.diff(resource.data)
-                    .affectedKeys().hasOnly(['participants']);
+      // For now, disallow updates to room metadata after creation
+      allow update: if false;
+
       // No one can delete a chat room
       allow delete: if false;
+
+      // ===== Messages Subcollection =====
+      match /messages/{messageId} {
+        // Any authenticated user can read messages in any room
+        allow read: if request.auth != null;
+        // Any authenticated user can write messages to any room
+        allow create: if request.auth != null;
+        // Nobody can update or delete messages directly
+        allow update, delete: if false;
+      }
     }
   }
 }

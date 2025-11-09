@@ -3,16 +3,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { anonymizeMessage } from '@/ai/flows/anonymize-message-metadata';
 import { generateAnonymousName } from '@/ai/flows/generate-anonymous-name';
-import type { Message, UiSettings, ChatMessage, MessagePayload } from '@/lib/types';
+import type { Message, UiSettings, ChatMessage } from '@/lib/types';
 import MessageList from './message-list';
 import MessageInput from './message-input';
 import ChatHeader from './chat-header';
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2, KeyRound } from 'lucide-react';
+import { Sparkles, Loader2 } from 'lucide-react';
 import { useFirebase, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp, JsonWebKey } from 'firebase/firestore';
-import { addDocumentNonBlocking, updateDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { decrypt, encrypt, getMyPublicKey, importPublicKey, initializeKeyPair } from '@/lib/crypto';
+import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp } from 'firebase/firestore';
+import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const defaultSettings: UiSettings = {
   messageExpiry: 0,
@@ -30,20 +29,15 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
   const [isSending, setIsSending] = useState(false);
   const [isRoomLoading, setIsRoomLoading] = useState(true);
   const [currentRoomId, setCurrentRoomId] = useState(initialRoomId);
-  const [isKeysLoading, setIsKeysLoading] = useState(true);
 
   const { toast } = useToast();
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
 
-  // Initialize crypto keys and user profile on first load
+  // Initialize user profile on first load
   useEffect(() => {
     const initUser = async () => {
       if (user && firestore) {
-        setIsKeysLoading(true);
-        await initializeKeyPair();
-        setIsKeysLoading(false);
-
         const userDocRef = doc(firestore, 'users', user.uid);
         const name = (await getDocs(query(collection(firestore, 'users'), where('uid', '==', user.uid)))).docs[0]?.data()?.anonymousName;
 
@@ -90,7 +84,6 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
               createdAt: serverTimestamp(),
               region: region,
               isPublic: true,
-              participants: {},
             };
             const docRef = await addDoc(roomsRef, newRoom);
             setCurrentRoomId(docRef.id);
@@ -106,106 +99,50 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     };
     resolveLobby();
   }, [initialRoomId, firestore]);
-
-  const roomRef = useMemoFirebase(() => {
-    if (!firestore || !currentRoomId) return null;
-    return doc(firestore, 'chatRooms', currentRoomId);
-  }, [firestore, currentRoomId]);
-
-  const { data: roomData } = useDoc(roomRef);
-
-  // Publish public key and name to the room
-  useEffect(() => {
-    const publishPresence = async () => {
-      if (roomRef && user && userName && !isKeysLoading && roomData) {
-        const myPublicKey = await getMyPublicKey();
-        if (myPublicKey) {
-          const currentParticipants = roomData.participants || {};
-          const myInfo = currentParticipants[user.uid];
-
-          if (!myInfo || JSON.stringify(myInfo.publicKey) !== JSON.stringify(myPublicKey) || myInfo.name !== userName) {
-            const updatePayload = {
-              [`participants.${user.uid}`]: {
-                publicKey: myPublicKey,
-                name: userName,
-              }
-            };
-            updateDocumentNonBlocking(roomRef, updatePayload);
-          }
-        }
-      }
-    };
-    publishPresence();
-  }, [roomRef, user, userName, isKeysLoading, roomData]);
-
-  // Query the user's personal inbox
+  
+  // Query messages for the current room
   const messagesQuery = useMemoFirebase(() => {
-    if (!firestore || !user || isRoomLoading) return null;
+    if (!firestore || !currentRoomId || isRoomLoading) return null;
     return query(
-      collection(firestore, 'users', user.uid, 'inbox'),
+      collection(firestore, 'chatRooms', currentRoomId, 'messages'),
       orderBy('timestamp', 'asc')
     );
-  }, [firestore, user, isRoomLoading]);
+  }, [firestore, currentRoomId, isRoomLoading]);
 
   const { data: firestoreMessages } = useCollection<ChatMessage>(messagesQuery);
   
-  // Decrypt and filter messages as they arrive
+  // Process messages as they arrive
   useEffect(() => {
     if (!firestoreMessages) return;
 
-    const processMessages = async () => {
-      const now = Date.now();
-      const expirySeconds = settings.messageExpiry;
+    const now = Date.now();
+    const expirySeconds = settings.messageExpiry;
 
-      const processedMessages: Message[] = (await Promise.all(
-        firestoreMessages.map(async (msg): Promise<Message | null> => {
+    const processedMessages: Message[] = firestoreMessages
+        .map((msg): Message | null => {
           if (expirySeconds > 0 && msg.timestamp instanceof Timestamp) {
             const messageTime = msg.timestamp.toMillis();
             if (now - messageTime > expirySeconds * 1000) return null;
           }
-
-          try {
-            const decryptedPayload: MessagePayload = JSON.parse(await decrypt(msg.encryptedPayload));
-            
-            // Only show messages for the current room
-            if (decryptedPayload.roomId !== currentRoomId) {
-                return null;
-            }
-
-            return {
-              id: msg.id,
-              text: decryptedPayload.text,
-              userId: msg.senderId,
-              username: msg.senderName,
-              timestamp: msg.timestamp,
-              anonymized: msg.anonymized,
-              file: decryptedPayload.file,
-            };
-          } catch (e: any) {
-            console.error(`Decryption error for message ID ${msg.id}:`, e);
-            return { // Return a message indicating failure
-              id: msg.id,
-              text: `[Decryption Failed: ${e.message}]`,
-              userId: 'system',
-              username: 'System',
-              timestamp: msg.timestamp,
-              anonymized: false,
-            };
-          }
+          
+          return {
+            id: msg.id,
+            text: msg.text,
+            userId: msg.senderId,
+            username: msg.senderName,
+            timestamp: msg.timestamp,
+            anonymized: !!msg.anonymized,
+            file: msg.file,
+          };
         })
-      )).filter((msg): msg is Message => msg !== null);
+      .filter((msg): msg is Message => msg !== null);
       
-      setMessages(processedMessages);
-    };
-
-    if (roomData) {
-        processMessages();
-    }
-  }, [firestoreMessages, roomData, settings.messageExpiry, currentRoomId]);
+    setMessages(processedMessages);
+  }, [firestoreMessages, settings.messageExpiry]);
 
 
   const handleSendMessage = useCallback(async (rawText: string, shouldAnonymize: boolean, file?: File) => {
-    if ((!rawText.trim() && !file) || isSending || !user || !userName || !currentRoomId || !firestore || !roomData) return;
+    if ((!rawText.trim() && !file) || isSending || !user || !userName || !currentRoomId || !firestore) return;
     setIsSending(true);
 
     try {
@@ -224,49 +161,19 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
       }
       
       const fileData = file ? { name: file.name, type: file.type, data: await file.text() } : undefined;
-      
-      const payload: MessagePayload = {
-        roomId: currentRoomId,
-        text: textToSend,
-        file: fileData,
+
+      const newMessage: Omit<ChatMessage, 'id'> = {
+          senderId: user.uid,
+          senderName: userName,
+          text: textToSend,
+          timestamp: serverTimestamp(),
+          anonymized: shouldAnonymize && rawText !== textToSend,
+          file: fileData,
       };
 
-      const recipientIds = Object.keys(roomData.participants || {});
-      if (recipientIds.length === 0) {
-        toast({ variant: "destructive", title: "No one is in the room to receive your message." });
-        setIsSending(false);
-        return;
-      }
+      const messagesRef = collection(firestore, 'chatRooms', currentRoomId, 'messages');
+      await addDocumentNonBlocking(messagesRef, newMessage);
 
-      const ttl = new Date();
-      ttl.setDate(ttl.getDate() + 15);
-
-      for (const recipientId of recipientIds) {
-        const recipientInfo = roomData.participants?.[recipientId];
-        if (!recipientInfo?.publicKey) {
-            console.warn(`No public key for recipient ${recipientId}. Skipping.`);
-            continue;
-        }
-
-        try {
-            const recipientPublicKey = await importPublicKey(recipientInfo.publicKey as JsonWebKey);
-            const encryptedPayload = await encrypt(JSON.stringify(payload), recipientPublicKey);
-        
-            const newMessage: Omit<ChatMessage, 'id'> = {
-                senderId: user.uid,
-                senderName: userName,
-                encryptedPayload: encryptedPayload,
-                timestamp: serverTimestamp(),
-                anonymized: shouldAnonymize && rawText !== textToSend,
-                expireAt: ttl,
-            };
-
-            const inboxRef = collection(firestore, 'users', recipientId, 'inbox');
-            addDocumentNonBlocking(inboxRef, newMessage);
-        } catch (e) {
-            console.error(`Failed to encrypt and send to ${recipientId}`, e)
-        }
-      }
     } catch (error: any) {
       console.error("Failed to send message:", error);
       toast({
@@ -277,7 +184,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     } finally {
       setIsSending(false);
     }
-  }, [isSending, user, userName, currentRoomId, toast, firestore, roomData]);
+  }, [isSending, user, userName, currentRoomId, toast, firestore]);
   
   const handleSettingsChange = (newSettings: Partial<UiSettings>) => {
     setSettings(prev => ({...prev, ...newSettings}));
@@ -318,17 +225,11 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
 
   }, [settings]);
 
-  if (isUserLoading || isRoomLoading || !userName || isKeysLoading) {
+  if (isUserLoading || isRoomLoading || !userName) {
     return (
         <div className="flex flex-col h-screen bg-background items-center justify-center text-foreground">
             <Loader2 className="h-12 w-12 animate-spin text-accent" />
-            <p className="mt-4 text-lg">Initializing your secure session...</p>
-             {isKeysLoading && 
-                <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                    <KeyRound className="h-4 w-4" />
-                    <span>Generating cryptographic keys...</span>
-                </div>
-            }
+            <p className="mt-4 text-lg">Initializing your session...</p>
         </div>
     )
   }

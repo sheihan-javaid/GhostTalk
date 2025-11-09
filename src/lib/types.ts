@@ -15,26 +15,19 @@ export interface Message {
   };
 }
 
-// Represents the document stored in a user's `/inbox` subcollection in Firestore
+// Represents the document stored in Firestore
 export interface ChatMessage {
   id: string;
   senderId: string;
   senderName: string;
-  encryptedPayload: string; // A JSON.stringified, then encrypted, MessagePayload
+  text: string;
   timestamp: any | FieldValue;
-  anonymized: boolean;
-  expireAt: Date;
-}
-
-// Represents the data that gets encrypted inside the `encryptedPayload`
-export interface MessagePayload {
-    roomId: string;
-    text: string;
-    file?: {
-        name: string;
-        type: string;
-        data: string; // base64 encoded
-    };
+  anonymized?: boolean;
+  file?: {
+    name: string;
+    type: string;
+    data: string; // base64 encoded
+  };
 }
 
 
