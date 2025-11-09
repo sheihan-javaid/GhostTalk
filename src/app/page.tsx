@@ -38,7 +38,7 @@ export default function Home() {
     }
   }, [user, auth]);
 
-  const createRoom = async (isPublic: boolean) => {
+  const createRoom = async (isPublic: boolean, isGroup: boolean) => {
     if (!user || !firestore) return;
 
     if (isPublic) {
@@ -46,9 +46,8 @@ export default function Home() {
         return;
     }
 
-    // For private rooms, create a new room with a unique ID
     const newRoomData = {
-        name: `Private Room`,
+        name: isGroup ? `Private Group` : `Private Room`,
         createdAt: serverTimestamp(),
         region: selectedRegion,
         isPublic: false,
@@ -59,7 +58,7 @@ export default function Home() {
         const docRef = await addDoc(roomsRef, newRoomData);
         router.push(`/chat/${docRef.id}`);
     } catch (error) {
-        console.error("Error creating private room:", error);
+        console.error("Error creating private room/group:", error);
     }
   };
 
@@ -67,7 +66,6 @@ export default function Home() {
     if (!user || !firestore) return;
 
     const roomsRef = collection(firestore, 'chatRooms');
-    // The query that was causing the error. I've removed the orderBy clause for now.
     const q = query(
       roomsRef,
       where('isPublic', '==', true),
@@ -81,7 +79,6 @@ export default function Home() {
       const room = querySnapshot.docs[0];
       router.push(`/chat/${room.id}`);
     } else {
-      // No public lobby found, create one
       const newRoom = {
         name: `Public Lobby - ${regions.find(r => r.value === selectedRegion)?.label || selectedRegion}`,
         createdAt: serverTimestamp(),
@@ -97,7 +94,8 @@ export default function Home() {
     }
   };
   
-  const createPrivateRoom = () => createRoom(false);
+  const createPrivateRoom = () => createRoom(false, false);
+  const createGroup = () => createRoom(false, true);
 
   const copyUpiToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -190,7 +188,7 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={createPrivateRoom} variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold" disabled={!user}>
+            <Button onClick={createGroup} variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold" disabled={!user}>
               Create a Group
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
