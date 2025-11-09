@@ -69,23 +69,23 @@ export default function Home() {
       limit(1)
     );
 
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-      const room = querySnapshot.docs[0];
-      router.push(`/chat/${room.id}`);
-    } else {
-      const newRoom = {
-        name: `Public Lobby - ${regions.find(r => r.value === selectedRegion)?.label || selectedRegion}`,
-        createdAt: serverTimestamp(),
-        region: selectedRegion,
-        isPublic: true,
-      };
-      try {
+    try {
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const room = querySnapshot.docs[0];
+        router.push(`/chat/${room.id}`);
+      } else {
+        const newRoom = {
+          name: `Public Lobby - ${regions.find(r => r.value === selectedRegion)?.label || selectedRegion}`,
+          createdAt: serverTimestamp(),
+          region: selectedRegion,
+          isPublic: true,
+        };
         const docRef = await addDoc(roomsRef, newRoom);
         router.push(`/chat/${docRef.id}`);
-      } catch (error) {
-        console.error("Error creating public lobby:", error);
       }
+    } catch (error) {
+      console.error("Error joining or creating public lobby:", error);
     }
   };
   
