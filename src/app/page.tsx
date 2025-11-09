@@ -245,18 +245,34 @@ export default function Home() {
           </DialogContent>
         </Dialog>
 
-        <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-               <Coffee className="h-8 w-8 text-accent" />
-               <span className="text-2xl font-headline">Support Us</span>
-            </CardTitle>
-            <CardDescription>
-              If you enjoy GhostTalk, consider supporting its development anonymously.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center gap-4">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50 cursor-pointer">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <Coffee className="h-8 w-8 text-accent" />
+                  <span className="text-2xl font-headline">Support Us</span>
+                </CardTitle>
+                <CardDescription>
+                  If you enjoy GhostTalk, consider supporting its development anonymously.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold">
+                  Buy me a coffee
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </CardContent>
+            </Card>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Support GhostTalk</DialogTitle>
+              <DialogDescription>
+                Your support helps keep this project alive and private.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col items-center gap-4 py-4">
               <div className="relative w-48 h-48 bg-white rounded-lg p-2">
                 <Image
                     src="https://i.ibb.co/hR0hVv4/qr.png"
@@ -267,7 +283,7 @@ export default function Home() {
                 />
               </div>
               <p className="text-sm text-muted-foreground">Scan to donate anonymously</p>
-               <p className="text-sm text-muted-foreground">or pay using the link below</p>
+              <p className="text-sm text-muted-foreground">or pay using the link below</p>
               <a
                 href="https://razorpay.me/@mohammadsheihanjavaid"
                 target="_blank"
@@ -277,8 +293,8 @@ export default function Home() {
                 ghost-talk@privacy
               </a>
             </div>
-          </CardContent>
-        </Card>
+          </DialogContent>
+        </Dialog>
       </div>
       <footer className="mt-20 text-center text-muted-foreground text-sm">
         <p>Your privacy is paramount. All messages are end-to-end encrypted and metadata is stripped.</p>
@@ -286,7 +302,4 @@ export default function Home() {
       </footer>
     </div>
   );
-
 }
-
-    
