@@ -22,8 +22,16 @@ service cloud.firestore {
       // Messages subcollection
       match /messages/{messageId} {
 
-        // Authenticated users can read and list messages inside any room
-        allow read, list, get: if request.auth != null;
+        // A user can read a single message if they are the recipient.
+        allow get: if request.auth != null && resource.data.recipientId == request.auth.uid;
+        
+        // A user can query messages if they are asking for messages sent to them.
+        // This is the CRITICAL fix. It checks that the query's `where` clause is correct.
+        allow list: if request.auth != null 
+                     && request.query.where.size() == 1
+                     && request.query.where[0].field == "recipientId"
+                     && request.query.where[0].op == "=="
+                     && request.query.where[0].value == request.auth.uid;
 
         // Authenticated users can send messages
         allow create: if request.auth != null;
