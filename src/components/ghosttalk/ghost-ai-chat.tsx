@@ -7,13 +7,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ghostChat, getGhostAIGreeting } from '@/ai/flows/ghost-chat';
 import { Loader2, Bot, User, Send } from 'lucide-react';
 import Link from 'next/link';
-import { MessageData } from 'genkit/ai';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 
 export default function GhostAiChat() {
-    const [history, setHistory] = useState<MessageData[]>([]);
+    const [history, setHistory] = useState<any[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -42,8 +41,8 @@ export default function GhostAiChat() {
     const handleSend = async () => {
         if (!input.trim()) return;
 
-        const currentUserMessage: MessageData = { role: 'user', content: [{ text: input }] };
-        const newHistory: MessageData[] = [...history, currentUserMessage];
+        const currentUserMessage = { role: 'user', content: [{ text: input }] };
+        const newHistory = [...history, currentUserMessage];
         
         setHistory(newHistory);
         setInput('');
@@ -60,7 +59,7 @@ export default function GhostAiChat() {
         }
     };
 
-    const getMessageText = (msg: MessageData) => {
+    const getMessageText = (msg: any) => {
         if (msg.content[0] && 'text' in msg.content[0]) {
             return msg.content[0].text;
         }
