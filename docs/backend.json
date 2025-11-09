@@ -1,50 +1,49 @@
 {
   "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user profile.",
+      "properties": {
+        "uid": { "type": "string" },
+        "anonymousName": { "type": "string" }
+      },
+      "required": ["uid", "anonymousName"]
+    },
     "ChatMessage": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "ChatMessage",
       "type": "object",
-      "description": "Represents a single message within a chat.",
+      "description": "Represents a single encrypted message within a user's inbox.",
       "properties": {
-        "userId": {
+        "senderId": {
           "type": "string",
-          "description": "The anonymous UID of the user who sent the message."
+          "description": "The UID of the user who sent the message."
         },
-        "username": {
-          "type": "string",
-          "description": "The AI-generated anonymous name of the sender."
+        "senderName": {
+            "type": "string",
+            "description": "The anonymous name of the sender."
         },
-        "encryptedText": {
+        "encryptedPayload": {
           "type": "string",
-          "description": "The end-to-end encrypted text content of the message."
+          "description": "The end-to-end encrypted JSON string containing the message text and file data."
         },
         "timestamp": {
           "type": "object",
-          "description": "Firestore server-side timestamp of when the message was sent."
+          "description": "Firestore server-side timestamp."
         },
         "anonymized": {
             "type": "boolean",
-            "description": "Indicates if the message content was altered by the AI anonymizer."
-        },
-        "file": {
-            "type": "object",
-            "properties": {
-                "name": {"type": "string"},
-                "type": {"type": "string"},
-                "data": {"type": "string"}
-            }
-        },
-        "recipientId": {
-          "type": "string",
-          "description": "The UID of the recipient, used for E2EE."
+            "description": "Indicates if the original message content was altered by the AI."
         },
         "expireAt": {
             "type": "string",
             "format": "date-time",
-            "description": "A timestamp indicating when this message should be automatically deleted by Firestore's TTL policy."
+            "description": "Timestamp for Firestore's TTL policy to auto-delete the message."
         }
       },
-      "required": ["userId", "username", "encryptedText", "timestamp", "recipientId"]
+      "required": ["senderId", "senderName", "encryptedPayload", "timestamp", "expireAt"]
     },
     "ChatRoom": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -58,19 +57,19 @@
         },
         "createdAt": {
           "type": "object",
-          "description": "Firestore server-side timestamp of when the room was created."
+          "description": "Firestore server-side timestamp."
         },
         "region": {
           "type": "string",
-          "description": "Geographic region the chat room is associated with."
+          "description": "Geographic region of the room."
         },
         "isPublic": {
             "type": "boolean",
             "description": "Indicates if the room is a public lobby or a private room."
         },
-        "publicKeys": {
+        "participants": {
             "type": "object",
-            "description": "A map of user UIDs to their public keys for E2EE."
+            "description": "A map of participant UIDs to their public keys and anonymous names for E2EE."
         }
       },
       "required": ["name", "createdAt", "region", "isPublic"]
@@ -80,16 +79,20 @@
     "providers": ["anonymous"]
   },
   "firestore": {
+      "/users/{userId}": {
+        "schema": { "$ref": "#/entities/User" },
+        "description": "Stores user profile information, like their anonymous name."
+      },
+      "/users/{userId}/inbox/{messageId}": {
+        "schema": { "$ref": "#/entities/ChatMessage" },
+        "description": "Stores encrypted messages delivered to a specific user.",
+        "ttl": {
+          "field": "expireAt"
+        }
+      },
       "/chatRooms/{chatRoomId}": {
         "schema": { "$ref": "#/entities/ChatRoom" },
-        "description": "Stores chat room metadata, including name, region, and creation timestamp."
-      },
-      "/chatRooms/{chatRoomId}/messages/{messageId}": {
-        "schema": { "$ref": "#/entities/ChatMessage" },
-        "description": "Stores all messages for a specific chat room.",
-        "ttl": {
-            "field": "expireAt"
-        }
+        "description": "Stores chat room metadata, including participants and their public keys."
       }
   }
 }

@@ -3,16 +3,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { anonymizeMessage } from '@/ai/flows/anonymize-message-metadata';
 import { generateAnonymousName } from '@/ai/flows/generate-anonymous-name';
-import { useFileEncryption } from '@/hooks/use-file-encryption';
-import type { Message, UiSettings } from '@/lib/types';
+import type { Message, UiSettings, ChatMessage, MessagePayload } from '@/lib/types';
 import MessageList from './message-list';
 import MessageInput from './message-input';
 import ChatHeader from './chat-header';
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Loader2, KeyRound } from 'lucide-react';
-import { useFirebase, useUser, useCollection, useMemoFirebase, useDoc, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, updateDoc, getDoc, Timestamp } from 'firebase/firestore';
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useFirebase, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, updateDoc, Timestamp, setDoc } from 'firebase/firestore';
+import { addDocumentNonBlocking, updateDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { decrypt, encrypt } from '@/lib/crypto';
 import { getMyPublicKey, initializeKeys, importPublicKey } from '@/lib/e2ee';
 
@@ -25,7 +24,7 @@ const defaultSettings: UiSettings = {
   animationIntensity: 'medium',
 };
 
-export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }) {
+export default function ChatLayout({ roomId: initialRoomId }: { roomId:string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [userName, setUserName] = useState('');
   const [settings, setSettings] = useState<UiSettings>(defaultSettings);
@@ -35,29 +34,45 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
   const [isKeysLoading, setIsKeysLoading] = useState(true);
 
   const { toast } = useToast();
-  const { encryptFile } = useFileEncryption();
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
 
-  // Initialize crypto keys on first load
+  // Initialize crypto keys and user profile on first load
   useEffect(() => {
-    const init = async () => {
-      if (user) {
+    const initUser = async () => {
+      if (user && firestore) {
         setIsKeysLoading(true);
         await initializeKeys();
         setIsKeysLoading(false);
+
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const name = (await getDocs(query(collection(firestore, 'users'), where('uid', '==', user.uid)))).docs[0]?.data()?.anonymousName;
+
+        if (name) {
+          setUserName(name);
+        } else {
+          try {
+            const aiName = await generateAnonymousName();
+            setUserName(aiName.name);
+            setDocumentNonBlocking(userDocRef, { uid: user.uid, anonymousName: aiName.name });
+          } catch (error) {
+            console.error("Failed to generate/set anonymous name:", error);
+            const fallbackName = 'User' + Math.floor(Math.random() * 9000 + 1000);
+            setUserName(fallbackName);
+            setDocumentNonBlocking(userDocRef, { uid: user.uid, anonymousName: fallbackName });
+          }
+        }
       }
     };
-    init();
-  }, [user]);
+    initUser();
+  }, [user, firestore]);
 
   // Resolve dynamic lobby rooms
   useEffect(() => {
     const resolveLobby = async () => {
-      if (initialRoomId.startsWith('lobby-')) {
+      if (initialRoomId.startsWith('lobby-') && firestore) {
         setIsRoomLoading(true);
         const region = initialRoomId.replace('lobby-', '');
-        if (!firestore) return;
         const roomsRef = collection(firestore, 'chatRooms');
         const q = query(
           roomsRef,
@@ -67,54 +82,32 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
         );
         
         try {
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-                setCurrentRoomId(querySnapshot.docs[0].id);
-            } else {
-                const newRoom = {
-                    name: `Public Lobby - ${region}`,
-                    createdAt: serverTimestamp(),
-                    region: region,
-                    isPublic: true,
-                    publicKeys: {},
-                };
-                const docRef = await addDoc(roomsRef, newRoom);
-                setCurrentRoomId(docRef.id);
-            }
-        } catch (error: any) {
-            const permissionError = new FirestorePermissionError({
-                path: 'chatRooms',
-                operation: 'list',
-            });
-            errorEmitter.emit('permission-error', permissionError);
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            setCurrentRoomId(querySnapshot.docs[0].id);
+          } else {
+            const newRoom = {
+              name: `Public Lobby - ${region}`,
+              createdAt: serverTimestamp(),
+              region: region,
+              isPublic: true,
+              participants: {},
+            };
+            const docRef = await addDoc(roomsRef, newRoom);
+            setCurrentRoomId(docRef.id);
+          }
+        } catch (error) {
+          console.error("Error resolving lobby:", error);
         } finally {
-            setIsRoomLoading(false);
+          setIsRoomLoading(false);
         }
       } else {
         setIsRoomLoading(false);
       }
     };
-    if (firestore) {
-      resolveLobby();
-    }
+    resolveLobby();
   }, [initialRoomId, firestore]);
 
-  // Generate user's anonymous name for the session
-  useEffect(() => {
-    const getUsername = async () => {
-      if (user && !userName) {
-        try {
-          const aiName = await generateAnonymousName();
-          setUserName(aiName.name);
-        } catch (error) {
-          console.error("Failed to generate anonymous name:", error);
-          setUserName('User' + Math.floor(Math.random() * 9000 + 1000));
-        }
-      }
-    };
-    getUsername();
-  }, [user, userName]);
-  
   const roomRef = useMemoFirebase(() => {
     if (!firestore || !currentRoomId) return null;
     return doc(firestore, 'chatRooms', currentRoomId);
@@ -122,35 +115,40 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
 
   const { data: roomData } = useDoc(roomRef);
 
-  // Publish public key to the room
+  // Publish public key and name to the room
   useEffect(() => {
-    const publishPublicKey = async () => {
-        if (roomRef && user && !isKeysLoading && roomData) {
-            const myPublicKey = await getMyPublicKey();
-            if (myPublicKey) {
-                const currentPublicKeys = roomData.publicKeys || {};
-                
-                // Only update if the key is not already there
-                if (currentPublicKeys[user.uid] !== myPublicKey) {
-                    const updatePayload = { [`publicKeys.${user.uid}`]: myPublicKey };
-                    updateDocumentNonBlocking(roomRef, updatePayload);
-                }
-            }
-        }
-    };
-    publishPublicKey();
-  }, [roomRef, user, isKeysLoading, roomData]);
+    const publishPresence = async () => {
+      if (roomRef && user && userName && !isKeysLoading && roomData) {
+        const myPublicKey = await getMyPublicKey();
+        if (myPublicKey) {
+          const currentParticipants = roomData.participants || {};
+          const myInfo = currentParticipants[user.uid];
 
+          if (!myInfo || myInfo.publicKey !== myPublicKey || myInfo.name !== userName) {
+            const updatePayload = {
+              [`participants.${user.uid}`]: {
+                publicKey: myPublicKey,
+                name: userName,
+              }
+            };
+            updateDocumentNonBlocking(roomRef, updatePayload);
+          }
+        }
+      }
+    };
+    publishPresence();
+  }, [roomRef, user, userName, isKeysLoading, roomData]);
+
+  // NEW: Query the user's personal inbox
   const messagesQuery = useMemoFirebase(() => {
-    if (!firestore || !currentRoomId || isRoomLoading || !user) return null;
+    if (!firestore || !user || isRoomLoading) return null;
     return query(
-      collection(firestore, 'chatRooms', currentRoomId, 'messages'),
-      where('recipientId', '==', user.uid),
+      collection(firestore, 'users', user.uid, 'inbox'),
       orderBy('timestamp', 'asc')
     );
-  }, [firestore, currentRoomId, isRoomLoading, user]);
+  }, [firestore, user, isRoomLoading]);
 
-  const { data: firestoreMessages, isLoading: areMessagesLoading } = useCollection<Message>(messagesQuery);
+  const { data: firestoreMessages } = useCollection<ChatMessage>(messagesQuery);
   
   // Decrypt and filter messages as they arrive
   useEffect(() => {
@@ -160,40 +158,51 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
       const now = Date.now();
       const expirySeconds = settings.messageExpiry;
 
-      const processedMessages = await Promise.all(
-        firestoreMessages.map(async (msg) => {
-          // Client-side expiry filtering
+      const processedMessages: Message[] = (await Promise.all(
+        firestoreMessages.map(async (msg): Promise<Message | null> => {
           if (expirySeconds > 0 && msg.timestamp instanceof Timestamp) {
             const messageTime = msg.timestamp.toMillis();
-            if (now - messageTime > expirySeconds * 1000) {
-              return null; // This message has expired locally
-            }
+            if (now - messageTime > expirySeconds * 1000) return null;
           }
 
-          // Decryption
           try {
-            const senderPublicKeyJwk = roomData?.publicKeys?.[msg.userId];
-            if (!senderPublicKeyJwk) {
-                return { ...msg, text: '[Waiting for sender key...]' };
+            const decryptedPayload: MessagePayload = JSON.parse(await decrypt(msg.encryptedPayload));
+            
+            // Only show messages for the current room
+            if (decryptedPayload.roomId !== currentRoomId) {
+                return null;
             }
-            const senderPublicKey = await importPublicKey(senderPublicKeyJwk);
-            const decryptedText = await decrypt(msg.encryptedText, senderPublicKey);
-            return { ...msg, text: decryptedText };
+
+            return {
+              id: msg.id,
+              text: decryptedPayload.text,
+              userId: msg.senderId,
+              username: msg.senderName,
+              timestamp: msg.timestamp,
+              anonymized: msg.anonymized,
+              file: decryptedPayload.file,
+            };
           } catch (e) {
             console.error('Decryption error:', e);
-            return { ...msg, text: '[Decryption Failed]' };
+            return { // Return a message indicating failure
+              id: msg.id,
+              text: '[Decryption Failed]',
+              userId: msg.senderId,
+              username: 'System',
+              timestamp: msg.timestamp,
+              anonymized: false,
+            };
           }
         })
-      );
+      )).filter((msg): msg is Message => msg !== null);
       
-      const validMessages = processedMessages.filter((msg): msg is Message => msg !== null);
-      setMessages(validMessages);
+      setMessages(processedMessages);
     };
 
     if (roomData) {
         processMessages();
     }
-  }, [firestoreMessages, roomData, settings.messageExpiry]);
+  }, [firestoreMessages, roomData, settings.messageExpiry, currentRoomId]);
 
 
   const handleSendMessage = useCallback(async (rawText: string, shouldAnonymize: boolean, file?: File) => {
@@ -215,51 +224,46 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
         }
       }
       
-      const fileData = file ? await encryptFile(file) : undefined;
-      const fullMessageText = fileData 
-        ? `${textToSend}\n\nFile attached: ${file.name}` 
-        : textToSend;
+      const fileData = file ? { name: file.name, type: file.type, data: await file.text() } : undefined;
+      
+      const payload: MessagePayload = {
+        roomId: currentRoomId,
+        text: textToSend,
+        file: fileData,
+      };
 
-      const recipientIds = Object.keys(roomData.publicKeys || {}).filter(id => id !== user.uid);
-      recipientIds.push(user.uid); // Also send to self
+      const recipientIds = Object.keys(roomData.participants || {});
+      if (recipientIds.length === 0) {
+        toast({ variant: "destructive", title: "No one is in the room to receive your message." });
+        setIsSending(false);
+        return;
+      }
 
-      const messagesRef = collection(firestore, 'chatRooms', currentRoomId, 'messages');
       const ttl = new Date();
       ttl.setDate(ttl.getDate() + 15);
 
       for (const recipientId of recipientIds) {
-        const recipientPublicKeyJwk = roomData.publicKeys?.[recipientId];
-        if (!recipientPublicKeyJwk) {
+        const recipientInfo = roomData.participants?.[recipientId];
+        if (!recipientInfo?.publicKey) {
             console.warn(`No public key for recipient ${recipientId}. Skipping.`);
             continue;
         }
 
-        const recipientPublicKey = await importPublicKey(recipientPublicKeyJwk);
-        const encryptedText = await encrypt(fullMessageText, recipientPublicKey);
+        const recipientPublicKey = await importPublicKey(recipientInfo.publicKey);
+        const encryptedPayload = await encrypt(JSON.stringify(payload), recipientPublicKey);
       
-        const newMessage: Omit<Message, 'id' | 'timestamp'> = {
-            encryptedText: encryptedText,
-            text: '', // Text is now stored encrypted
-            userId: user.uid,
-            username: userName,
-            recipientId: recipientId, // Set recipient for E2EE
-            anonymized: shouldAnonymize && rawText !== textToSend,
-            file: fileData ? {
-            name: file.name,
-            type: file.type,
-            data: fileData,
-            } : undefined,
-        };
-
-        const finalMessage = { 
-            ...newMessage, 
+        const newMessage: Omit<ChatMessage, 'id'> = {
+            senderId: user.uid,
+            senderName: userName,
+            encryptedPayload: encryptedPayload,
             timestamp: serverTimestamp(),
+            anonymized: shouldAnonymize && rawText !== textToSend,
             expireAt: ttl,
         };
-        addDocumentNonBlocking(messagesRef, finalMessage);
+
+        const inboxRef = collection(firestore, 'users', recipientId, 'inbox');
+        addDocumentNonBlocking(inboxRef, newMessage);
       }
-
-
     } catch (error: any) {
       console.error("Failed to send message:", error);
       toast({
@@ -270,7 +274,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
     } finally {
       setIsSending(false);
     }
-  }, [isSending, user, userName, currentRoomId, toast, encryptFile, firestore, roomData]);
+  }, [isSending, user, userName, currentRoomId, toast, firestore, roomData]);
   
   const handleSettingsChange = (newSettings: Partial<UiSettings>) => {
     setSettings(prev => ({...prev, ...newSettings}));

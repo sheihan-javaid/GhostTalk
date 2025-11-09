@@ -2,51 +2,40 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ===== Users Collection =====
+    match /users/{userId} {
+      // Anyone can read user profiles (to get anonymous names)
+      allow read: if true;
+      // A user can create their own profile
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      // ===== User Inbox Subcollection =====
+      match /inbox/{messageId} {
+        // A user can only read from their own inbox
+        allow get, list: if request.auth != null && request.auth.uid == userId;
+
+        // Any authenticated user can write to another user's inbox (i.e., send a message)
+        allow create: if request.auth != null;
+
+        // Nobody can update or delete inbox messages directly
+        allow update, delete: if false;
+      }
+    }
+
     // ===== Chat Rooms Collection =====
     match /chatRooms/{roomId} {
-
-      // Anyone can read room metadata (to join)
+      // Anyone can read or list chat room metadata
       allow read, list: if true;
 
-      // Allow room creation only if a request includes encryption metadata (E2EE)
-      allow create: if request.resource.data.keys().hasAll(['createdAt', 'encryptionType'])
-                    && request.resource.data.encryptionType == 'E2EE';
+      // Only authenticated users can create new chat rooms
+      allow create: if request.auth != null;
 
-      // Allow updating only for non-sensitive fields (like active users or public keys)
-      allow update: if request.resource.data.diff(resource.data)
-                      .affectedKeys()
-                      .hasOnly(['activeUsers', 'publicKeys', 'lastActivity']);
-
-      // No one can delete rooms manually
+      // Authenticated users can update a room's participants list
+      allow update: if request.auth != null
+                    && request.resource.data.diff(resource.data)
+                    .affectedKeys().hasOnly(['participants']);
+      // No one can delete a chat room
       allow delete: if false;
-
-      // ===== Messages Subcollection =====
-      match /messages/{messageId} {
-
-        // Allow users to send messages if encryption data is present
-        allow create: if request.resource.data.keys().hasAll(['senderId', 'cipherText', 'timestamp'])
-                      && request.resource.data.size() <= 10240; // limit to 10KB per message
-
-        // Allow read only if message is intended for the same room (anonymity)
-        allow get, list: if true; // messages are fetched only inside app logic
-
-        // No updates or deletions allowed (auto-delete handled by Cloud Function)
-        allow update, delete: if false;
-      }
-
-      // ===== File Sharing Subcollection =====
-      match /files/{fileId} {
-
-        // Allow file uploads with encrypted metadata only
-        allow create: if request.resource.data.keys().hasAll(['fileName', 'fileType', 'fileSize', 'encryptedKey'])
-                      && request.resource.data.fileSize < 10485760; // max 10MB file
-
-        // Allow read only temporarily (auto-deletes handled by Cloud Function)
-        allow get, list: if true;
-
-        // No updates or manual deletions allowed
-        allow update, delete: if false;
-      }
     }
   }
 }

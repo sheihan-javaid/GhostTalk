@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useFirebase, initiateAnonymousSignIn, useUser } from '@/firebase';
-import { collection, serverTimestamp, query, where, getDocs, limit, addDoc } from 'firebase/firestore';
+import { collection, serverTimestamp, addDoc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -49,11 +49,10 @@ export default function Home() {
         createdAt: serverTimestamp(),
         region: selectedRegion,
         isPublic: false,
-        publicKeys: {},
+        participants: {},
     };
 
     const roomsRef = collection(firestore, 'chatRooms');
-    // Use non-blocking write and handle navigation in the promise
     addDocumentNonBlocking(roomsRef, newRoomData)
       .then(docRef => {
         if (docRef) {
@@ -61,7 +60,6 @@ export default function Home() {
         }
       })
       .catch(() => {
-        // The error is handled by the global emitter, but you can show a toast here if needed.
         toast({
             variant: "destructive",
             title: "Uh oh! Something went wrong.",
