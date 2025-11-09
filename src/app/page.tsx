@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const regions = [
   { value: 'north-america', label: 'North America' },
@@ -273,7 +274,7 @@ export default function Home() {
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-4">
                     <div className="relative w-48 h-48 bg-white rounded-lg p-2">
-                         <img
+                         <Image
                             src="https://i.ibb.co/hR0hVv4/qr.png"
                             alt="BHIM UPI QR Code for mohammadsheihanjavaid"
                             width={192}
@@ -303,3 +304,5 @@ export default function Home() {
   );
 
 }
+
+    
