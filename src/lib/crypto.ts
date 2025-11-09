@@ -81,6 +81,11 @@ export async function decrypt(encryptedPackage: string): Promise<string> {
   
   // 1. Unpack
   const { ephemPubKey, iv, ct } = packaged;
+  
+  if (!ephemPubKey || typeof ephemPubKey !== 'object' || !ephemPubKey.kty) {
+    throw new Error("Invalid ephemeral public key in package.");
+  }
+
   const ivAb = str2ab(iv);
   const ciphertextAb = str2ab(ct);
 
