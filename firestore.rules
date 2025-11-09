@@ -25,8 +25,10 @@ service cloud.firestore {
                       request.resource.data.diff(resource.data).affectedKeys()
                         .hasOnly(['participants', 'participants.' + request.auth.uid]);
 
-      // Allow authenticated users to delete whisper rooms.
-      allow delete: if request.auth != null && resource.data.name.matches("Whisper Room.*");
+      // Allow a participant to delete a whisper room they are in.
+      allow delete: if request.auth != null 
+                      && resource.data.name.matches("Whisper Room.*")
+                      && resource.data.participants[request.auth.uid] != null;
 
       // ===== Messages Subcollection =====
       match /messages/{messageId} {
