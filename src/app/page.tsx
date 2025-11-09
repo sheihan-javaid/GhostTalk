@@ -275,25 +275,25 @@ export default function Home() {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-4">
-                    {qrCodeImage && (
-                        <div className="relative w-64 h-64">
-                            <Image 
-                                src={qrCodeImage.imageUrl}
-                                alt={qrCodeImage.description}
-                                fill
-                                data-ai-hint={qrCodeImage.imageHint}
-                                className="rounded-md object-contain"
-                            />
-                        </div>
-                    )}
-                    <a 
-                        href="https://razorpay.me/@mohammadsheihanjavaid"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-mono text-accent underline hover:text-accent/80"
-                    >
-                        ghost-talk@privacy
-                    </a>
+                  {qrCodeImage && (
+                    <div className="relative w-64 h-64">
+                      <Image
+                        src={qrCodeImage.imageUrl}
+                        alt={qrCodeImage.description}
+                        fill
+                        className="object-contain"
+                        data-ai-hint={qrCodeImage.imageHint}
+                      />
+                    </div>
+                  )}
+                  <a
+                    href="https://razorpay.me/@mohammadsheihanjavaid"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-accent underline hover:text-accent/80"
+                  >
+                    ghost-talk@privacy
+                  </a>
                 </div>
               </DialogContent>
             </Dialog>
@@ -307,9 +307,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
-
-    
-
-    
