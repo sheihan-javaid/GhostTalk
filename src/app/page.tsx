@@ -273,7 +273,7 @@ export default function Home() {
                 <div className="flex flex-col items-center gap-4 py-4">
                   <div className="p-4 bg-white rounded-lg">
                     <img
-                        src="https://i.ibb.co/hR0hVv4/qr.png"
+                        src="https://i.ibb.co/YjV4jFj/qr-code.png"
                         alt="QR Code for anonymous donation"
                         className="h-64 w-64 object-contain"
                     />
@@ -301,3 +301,4 @@ export default function Home() {
   );
 
     
+
