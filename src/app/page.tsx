@@ -33,7 +33,7 @@ export default function Home() {
     }
   }, [user, auth]);
 
-  const createRoom = async (isPublic: boolean, isGroup: boolean) => {
+  const createRoom = async (isPublic: boolean) => {
     if (!user || !firestore) return;
 
     if (isPublic) {
@@ -42,7 +42,7 @@ export default function Home() {
     }
 
     const newRoomData = {
-        name: isGroup ? `Private Group` : `Private Room`,
+        name: `Private Room`,
         createdAt: serverTimestamp(),
         region: selectedRegion,
         isPublic: false,
@@ -53,44 +53,16 @@ export default function Home() {
         const docRef = await addDoc(roomsRef, newRoomData);
         router.push(`/chat/${docRef.id}`);
     } catch (error) {
-        console.error("Error creating private room/group:", error);
+        console.error("Error creating private room:", error);
     }
   };
 
   const joinPublicLobby = async () => {
     if (!user || !firestore) return;
-
-    const roomsRef = collection(firestore, 'chatRooms');
-    const q = query(
-      roomsRef,
-      where('isPublic', '==', true),
-      where('region', '==', selectedRegion),
-      // orderBy('createdAt', 'desc'), // This line requires a composite index
-      limit(1)
-    );
-
-    try {
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        const room = querySnapshot.docs[0];
-        router.push(`/chat/${room.id}`);
-      } else {
-        const newRoom = {
-          name: `Public Lobby - ${regions.find(r => r.value === selectedRegion)?.label || selectedRegion}`,
-          createdAt: serverTimestamp(),
-          region: selectedRegion,
-          isPublic: true,
-        };
-        const docRef = await addDoc(roomsRef, newRoom);
-        router.push(`/chat/${docRef.id}`);
-      }
-    } catch (error) {
-      console.error("Error joining or creating public lobby:", error);
-    }
+    router.push(`/chat/lobby-${selectedRegion}`);
   };
   
-  const createPrivateRoom = () => createRoom(false, false);
-  const createGroup = () => createRoom(false, true);
+  const createPrivateRoom = () => createRoom(false);
 
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen bg-background p-4 animate-in fade-in-0 duration-500">
@@ -140,7 +112,7 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={joinPublicLobby} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold" disabled={!user}>
+            <Button onClick={joinPublicLobby} variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold" disabled={!user}>
               Join Public Lobby
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
@@ -176,7 +148,7 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={createGroup} variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold" disabled={!user}>
+            <Button onClick={createPrivateRoom} variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold" disabled={!user}>
               Create a Group
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
@@ -217,7 +189,6 @@ export default function Home() {
                         data-ai-hint="qr code"
                         className="rounded-md"
                     />
-                    <p className="text-sm text-muted-foreground">You can support us anonymously via the link below:</p>
                     <a 
                         href="https://razorpay.me/@mohammadsheihanjavaid"
                         target="_blank"
@@ -238,5 +209,4 @@ export default function Home() {
       </footer>
     </div>
   );
-
-    
+}
