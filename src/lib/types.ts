@@ -14,6 +14,7 @@ export interface Message {
     data: string; // base64 encoded
   };
   recipientId: string;
+  expireAt?: Date;
 }
 
 export interface UiSettings {

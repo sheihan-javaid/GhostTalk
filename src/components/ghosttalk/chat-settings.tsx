@@ -16,7 +16,8 @@ const expiryOptions = [
   { value: '60', label: '1 Minute' },
   { value: '300', label: '5 Minutes' },
   { value: '3600', label: '1 Hour' },
-  { value: '86400', label: '24 Hours' },
+  { value: '86400', label: '1 Day' },
+  { value: '604800', label: '7 Days' },
   { value: '0', label: 'Never' },
 ];
 
@@ -147,7 +148,7 @@ export default function ChatSettings({ isOpen, onOpenChange, onSettingsChange, c
           <div className="space-y-3">
             <Label className="font-semibold">Automatic Message Deletion</Label>
             <p className="text-sm text-muted-foreground">
-              Messages older than this duration will be automatically deleted from your device.
+              Messages older than this duration will be automatically deleted from your view. All messages are permanently deleted from servers after 15 days.
             </p>
             <RadioGroup
               value={String(currentSettings.messageExpiry)}

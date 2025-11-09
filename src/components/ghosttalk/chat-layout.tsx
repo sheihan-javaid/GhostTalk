@@ -11,7 +11,7 @@ import ChatHeader from './chat-header';
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Loader2, KeyRound } from 'lucide-react';
 import { useFirebase, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, updateDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { decrypt, encrypt } from '@/lib/crypto';
 import { getMyPublicKey, initializeKeys, importPublicKey } from '@/lib/e2ee';
@@ -142,15 +142,26 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
 
   const { data: firestoreMessages, isLoading: areMessagesLoading } = useCollection<Message>(messagesQuery);
   
-  // Decrypt messages as they arrive
+  // Decrypt and filter messages as they arrive
   useEffect(() => {
     if (!firestoreMessages) return;
 
-    const decryptMessages = async () => {
-      const decrypted = await Promise.all(
+    const processMessages = async () => {
+      const now = Date.now();
+      const expirySeconds = settings.messageExpiry;
+
+      const processedMessages = await Promise.all(
         firestoreMessages.map(async (msg) => {
+          // Client-side expiry filtering
+          if (expirySeconds > 0 && msg.timestamp instanceof Timestamp) {
+            const messageTime = msg.timestamp.toMillis();
+            if (now - messageTime > expirySeconds * 1000) {
+              return null; // This message has expired locally
+            }
+          }
+
+          // Decryption
           try {
-            // Find sender's public key from room data
             const senderPublicKeyJwk = roomData?.publicKeys?.[msg.userId];
             if (!senderPublicKeyJwk) {
                 return { ...msg, text: '[Waiting for sender key...]' };
@@ -164,11 +175,15 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
           }
         })
       );
-      setMessages(decrypted);
+      
+      const validMessages = processedMessages.filter((msg): msg is Message => msg !== null);
+      setMessages(validMessages);
     };
 
-    decryptMessages();
-  }, [firestoreMessages, roomData]);
+    if (roomData) {
+        processMessages();
+    }
+  }, [firestoreMessages, roomData, settings.messageExpiry]);
 
 
   const handleSendMessage = useCallback(async (rawText: string, shouldAnonymize: boolean, file?: File) => {
@@ -199,6 +214,8 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
       recipientIds.push(user.uid); // Also send to self
 
       const messagesRef = collection(firestore, 'chatRooms', currentRoomId, 'messages');
+      const ttl = new Date();
+      ttl.setDate(ttl.getDate() + 15);
 
       for (const recipientId of recipientIds) {
         const recipientPublicKeyJwk = roomData.publicKeys?.[recipientId];
@@ -224,7 +241,11 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId: string }
             } : undefined,
         };
 
-        const finalMessage = { ...newMessage, timestamp: serverTimestamp() };
+        const finalMessage = { 
+            ...newMessage, 
+            timestamp: serverTimestamp(),
+            expireAt: ttl,
+        };
         addDocumentNonBlocking(messagesRef, finalMessage);
       }
 

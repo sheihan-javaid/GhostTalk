@@ -37,6 +37,11 @@
         "recipientId": {
           "type": "string",
           "description": "The UID of the recipient, used for E2EE."
+        },
+        "expireAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "A timestamp indicating when this message should be automatically deleted by Firestore's TTL policy."
         }
       },
       "required": ["userId", "username", "encryptedText", "timestamp", "recipientId"]
@@ -81,7 +86,10 @@
       },
       "/chatRooms/{chatRoomId}/messages/{messageId}": {
         "schema": { "$ref": "#/entities/ChatMessage" },
-        "description": "Stores all messages for a specific chat room."
+        "description": "Stores all messages for a specific chat room.",
+        "ttl": {
+            "field": "expireAt"
+        }
       }
   }
 }
