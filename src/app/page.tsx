@@ -273,9 +273,9 @@ export default function Home() {
                 <div className="flex flex-col items-center gap-4 py-4">
                   <div className="p-4 bg-white rounded-lg">
                     <img
-                        src="https://picsum.photos/seed/qr/192/192"
+                        src="https://i.ibb.co/hR0hVv4/qr.png"
                         alt="QR Code for anonymous donation"
-                        className="h-48 w-48 object-contain"
+                        className="h-64 w-64 object-contain"
                     />
                   </div>
                   <p className="text-sm text-muted-foreground">Scan to donate anonymously</p>
