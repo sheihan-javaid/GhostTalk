@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useState, useEffect } from 'react';
 import { useFirebase, initiateAnonymousSignIn, useUser } from '@/firebase';
 import { collection, serverTimestamp, query, where, getDocs, limit, addDoc } from 'firebase/firestore';
@@ -21,6 +20,8 @@ const regions = [
   { value: 'oceania', label: 'Oceania' },
 ];
 
+const upiQrCodeImageUrl = "https://i.ibb.co/6rWd4Wf/qr-code.png";
+
 export default function Home() {
   const router = useRouter();
   const [isUpiCopied, setIsUpiCopied] = useState(false);
@@ -30,7 +31,6 @@ export default function Home() {
   const { user } = useUser();
 
   const anonymousUpiId = 'ghost-talk@privacy';
-  const upiQrCodeImage = PlaceHolderImages.find(img => img.id === 'upi-qr-code');
 
   useEffect(() => {
     if (!user && auth) {
@@ -221,14 +221,14 @@ export default function Home() {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-4">
-                    {upiQrCodeImage && <Image 
-                        src={upiQrCodeImage.imageUrl}
-                        alt={upiQrCodeImage.description}
+                    <Image 
+                        src={upiQrCodeImageUrl}
+                        alt="UPI QR code for anonymous donations"
                         width={200}
                         height={200}
                         className="rounded-lg border-4 border-accent shadow-lg"
-                        data-ai-hint={upiQrCodeImage.imageHint}
-                    />}
+                        data-ai-hint="qr code"
+                    />
                     <p className="text-sm text-muted-foreground">Or copy the anonymous UPI ID below</p>
                     <div className="flex w-full max-w-sm items-center gap-2 p-2 rounded-md bg-secondary">
                         <input type="text" readOnly value={anonymousUpiId} className="flex-1 text-sm bg-transparent text-foreground truncate" />
@@ -250,5 +250,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
