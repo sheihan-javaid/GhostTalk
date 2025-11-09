@@ -9,7 +9,8 @@ function ab2str(buf: ArrayBuffer): string {
 
 // Helper function to convert Base64 to ArrayBuffer
 function str2ab(str: string): ArrayBuffer {
-  return Buffer.from(str, 'base64');
+  const buf = Buffer.from(str, 'base64');
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
 }
 
 /**
@@ -114,12 +115,17 @@ export async function decrypt(encryptedPackageB64: string): Promise<string> {
   );
   
   // 5. Decrypt
-  const decryptedAb = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: ivAb },
-    sharedSecret,
-    ciphertextAb
-  );
+  try {
+    const decryptedAb = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: ivAb },
+      sharedSecret,
+      ciphertextAb
+    );
 
-  const textDecoder = new TextDecoder();
-  return textDecoder.decode(decryptedAb);
+    const textDecoder = new TextDecoder();
+    return textDecoder.decode(decryptedAb);
+  } catch (error) {
+    console.error("Decryption failed:", error);
+    throw new Error("Failed to decrypt message. The key may be incorrect or the data corrupted.");
+  }
 }
