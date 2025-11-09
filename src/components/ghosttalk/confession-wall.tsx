@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, serverTimestamp, query, orderBy, doc, updateDoc, increment } from 'firebase/firestore';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
@@ -109,19 +109,14 @@ export default function ConfessionWall() {
     }
   };
   
-  const handleLike = async (confessionId: string) => {
+  const handleLike = (confessionId: string) => {
     if (!user || !firestore || likedConfessions.includes(confessionId)) return;
 
     const confessionRef = doc(firestore, 'confessions', confessionId);
-    try {
-      await updateDoc(confessionRef, {
+    updateDocumentNonBlocking(confessionRef, {
         likes: increment(1),
-      });
-      setLikedConfessions([...likedConfessions, confessionId]);
-    } catch(e) {
-      console.error(e);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not like post.' });
-    }
+    });
+    setLikedConfessions([...likedConfessions, confessionId]);
   };
 
   return (

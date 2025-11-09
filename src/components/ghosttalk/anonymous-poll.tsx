@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, serverTimestamp, query, orderBy, doc, updateDoc, increment } from 'firebase/firestore';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -69,31 +69,28 @@ export default function AnonymousPoll() {
       createdAt: serverTimestamp(),
     };
 
-    try {
-      await addDocumentNonBlocking(collection(firestore, 'polls'), newPoll);
-      setQuestion('');
-      setOptions(['', '']);
-      toast({ title: 'Success!', description: 'Your poll has been created.' });
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not create poll.' });
-    } finally {
-      setIsCreating(false);
-    }
+    addDocumentNonBlocking(collection(firestore, 'polls'), newPoll)
+        .then(() => {
+            setQuestion('');
+            setOptions(['', '']);
+            toast({ title: 'Success!', description: 'Your poll has been created.' });
+        })
+        .catch(() => {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not create poll.' });
+        })
+        .finally(() => {
+            setIsCreating(false);
+        });
   };
   
-  const handleVote = async (pollId: string, optionIndex: number) => {
+  const handleVote = (pollId: string, optionIndex: number) => {
     if (!user || !firestore || votedPolls.includes(pollId)) return;
     
     const pollRef = doc(firestore, 'polls', pollId);
-    try {
-      await updateDoc(pollRef, {
+    updateDocumentNonBlocking(pollRef, {
         [`votes.${optionIndex}`]: increment(1),
-      });
-      setVotedPolls([...votedPolls, pollId]);
-    } catch(e) {
-        // This component doesn't have the error listener setup
-        console.error(e);
-    }
+    });
+    setVotedPolls([...votedPolls, pollId]);
   };
   
   const getTotalVotes = (votes: { [key: string]: number }) => {
