@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -272,7 +273,7 @@ export default function Home() {
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-4">
                   <div className="p-4 bg-white rounded-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" className="object-contain">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" className="object-contain">
                       <rect width="256" height="256" fill="#ffffff"/>
                       <path fill="#000000" d="M32 32h56v56h-56zM40 40v40h40v-40zM32 168h56v56h-56zM40 176v40h40v-40zM168 32h56v56h-56zM176 40v40h40v-40zM120 48h8v8h-8zM104 56h8v8h-8zM144 56h8v8h-8zM120 64h8v8h-8zM104 72h8v8h-8zM144 72h8v8h-8zM128 80h8v8h-8zM112 88h8v8h-8zM136 88h8v8h-8zM104 96h8v8h-8zM144 96h8v8h-8zM120 104h8v8h-8zM104 112h8v8h-8zM144 112h8v8h-8zM104 128h8v8h-8zM144 128h8v8h-8zM120 136h8v8h-8zM104 152h8v8h-8zM120 152h8v8h-8zM128 152h8v8h-8zM144 152h8v8h-8zM152 152h8v8h-8zM104 168h8v8h-8zM120 168h8v8h-8zM128 168h8v8h-8zM152 168h8v8h-8zM168 168h8v8h-8zM184 168h8v8h-8zM200 168h8v8h-8zM104 184h8v8h-8zM128 184h8v8h-8zM152 184h8v8h-8zM200 184h8v8h-8zM104 200h8v8h-8zM128 200h8v8h-8zM152 200h8v8h-8zM168 200h8v8h-8zM184 200h8v8h-8zM200 200h8v8h-8zM208 160h8v8h-8zM160 120h8v8h-8zM184 120h8v8h-8zM208 120h8v8h-8zM160 144h8v8h-8zM184 144h8v8h-8zM208 144h8v8h-8zM168 104h8v8h-8zM192 104h8v8h-8zM168 80h8v8h-8zM192 80h8v8h-8zM216 80h8v8h-8zM168 56h8v8h-8zM192 56h8v8h-8zM216 56h8v8h-8z"/>
                     </svg>
@@ -300,5 +301,7 @@ export default function Home() {
   );
 
 }
+
+    
 
     
