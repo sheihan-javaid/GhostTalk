@@ -38,32 +38,6 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
   const { toast } = useToast();
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
-
-  // Handle ephemeral whisper rooms
-  useEffect(() => {
-    const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
-        if (user && firestore && isWhisper && currentRoomId) {
-          const roomRef = doc(firestore, 'chatRooms', currentRoomId);
-          const roomSnap = await getDoc(roomRef);
-          if(roomSnap.exists()) {
-              const participants = roomSnap.data().participants || {};
-              // If last user, delete the room
-              if(Object.keys(participants).length <= 1) {
-                  await deleteDoc(roomRef);
-              } else {
-                  // Otherwise, just remove self
-                  const newParticipants = {...participants};
-                  delete newParticipants[user.uid];
-                  await updateDoc(roomRef, { participants: newParticipants });
-              }
-          }
-        }
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-
-  }, [user, firestore, isWhisper, currentRoomId]);
   
 
   // Initialize user profile and crypto keys
