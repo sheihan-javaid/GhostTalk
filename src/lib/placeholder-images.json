@@ -3,7 +3,7 @@
     {
       "id": "upi-qr-code",
       "description": "UPI QR code for anonymous donations",
-      "imageUrl": "https://i.ibb.co/YjV4jFj/qr-code.png",
+      "imageUrl": "/qr-code.png",
       "imageHint": "qr code"
     }
   ]
