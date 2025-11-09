@@ -1,4 +1,3 @@
-
 'use client';
 
 import { getMyPrivateKey } from './e2ee';
@@ -77,9 +76,9 @@ export async function encrypt(text: string, recipientPublicKey: CryptoKey): Prom
  */
 export async function decrypt(encryptedPackageB64: string): Promise<string> {
   // 1. Base64-decode the incoming string to get the original JSON string.
-  const encryptedPackage = Buffer.from(encryptedPackageB64, 'base64').toString('utf8');
-
-  const packaged = JSON.parse(encryptedPackage);
+  const encryptedPackageString = Buffer.from(encryptedPackageB64, 'base64').toString('utf-8');
+  const packaged = JSON.parse(encryptedPackageString);
+  
   const myPrivateKey = await getMyPrivateKey();
 
   if (!myPrivateKey) {

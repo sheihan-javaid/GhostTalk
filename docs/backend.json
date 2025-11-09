@@ -27,7 +27,7 @@
         },
         "encryptedPayload": {
           "type": "string",
-          "description": "The end-to-end encrypted JSON string containing the message text and file data."
+          "description": "The end-to-end encrypted JSON string containing the message text and file data. This string is Base64 encoded."
         },
         "timestamp": {
           "type": "object",
