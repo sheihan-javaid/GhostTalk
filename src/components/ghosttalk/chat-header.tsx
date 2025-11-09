@@ -1,10 +1,11 @@
 'use client';
 
-import { Ghost, Settings, Copy, Check, Palette } from 'lucide-react';
+import { Ghost, Settings, Copy, Check, Palette, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import ChatSettings from './chat-settings';
+import PrivacySettings from './privacy-settings';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +23,8 @@ interface ChatHeaderProps {
 export default function ChatHeader({ roomId, onSettingsChange, settings }: ChatHeaderProps) {
   const [inviteLink, setInviteLink] = useState('');
   const [isCopied, setIsCopied] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAppearanceSettingsOpen, setIsAppearanceSettingsOpen] = useState(false);
+  const [isPrivacySettingsOpen, setIsPrivacySettingsOpen] = useState(false);
 
   useEffect(() => {
     // This needs to run on the client to get the window.location
@@ -42,7 +44,7 @@ export default function ChatHeader({ roomId, onSettingsChange, settings }: ChatH
         <h1 className="text-2xl font-bold text-foreground hidden sm:block font-headline">GhostTalk</h1>
       </Link>
       <div className="flex items-center gap-2 sm:gap-4">
-        {roomId !== 'random-lobby' && (
+        {roomId !== 'random-lobby' && !roomId.startsWith('lobby-') && (
           <div className="flex items-center gap-2 p-2 rounded-md bg-secondary">
             <span className="text-sm text-muted-foreground hidden md:inline">Invite:</span>
             <input type="text" readOnly value={inviteLink} className="text-sm bg-transparent w-32 md:w-48 text-foreground truncate" />
@@ -61,17 +63,28 @@ export default function ChatHeader({ roomId, onSettingsChange, settings }: ChatH
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => setIsSettingsOpen(true)}>
+            <DropdownMenuItem onSelect={() => setIsAppearanceSettingsOpen(true)}>
               <Palette className="mr-2 h-4 w-4" />
               <span>Appearance</span>
+            </DropdownMenuItem>
+             <DropdownMenuItem onSelect={() => setIsPrivacySettingsOpen(true)}>
+              <Shield className="mr-2 h-4 w-4" />
+              <span>Privacy</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
         <ChatSettings 
-            isOpen={isSettingsOpen} 
-            onOpenChange={setIsSettingsOpen} 
+            isOpen={isAppearanceSettingsOpen} 
+            onOpenChange={setIsAppearanceSettingsOpen} 
             onSettingsChange={onSettingsChange} 
+            currentSettings={settings}
+        />
+
+        <PrivacySettings
+            isOpen={isPrivacySettingsOpen}
+            onOpenChange={setIsPrivacySettingsOpen}
+            onSettingsChange={onSettingsChange}
             currentSettings={settings}
         />
 
