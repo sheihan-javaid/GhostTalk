@@ -10,7 +10,7 @@ import ChatHeader from './chat-header';
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Loader2, KeyRound } from 'lucide-react';
 import { useFirebase, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp, JsonWebKey } from 'firebase/firestore';
 import { addDocumentNonBlocking, updateDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { decrypt, encrypt, getMyPublicKey, importPublicKey, initializeKeyPair } from '@/lib/crypto';
 
@@ -123,7 +123,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
           const currentParticipants = roomData.participants || {};
           const myInfo = currentParticipants[user.uid];
 
-          if (!myInfo || myInfo.publicKey !== myPublicKey || myInfo.name !== userName) {
+          if (!myInfo || JSON.stringify(myInfo.publicKey) !== JSON.stringify(myPublicKey) || myInfo.name !== userName) {
             const updatePayload = {
               [`participants.${user.uid}`]: {
                 publicKey: myPublicKey,
@@ -249,7 +249,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
         }
 
         try {
-            const recipientPublicKey = await importPublicKey(recipientInfo.publicKey);
+            const recipientPublicKey = await importPublicKey(recipientInfo.publicKey as JsonWebKey);
             const encryptedPayload = await encrypt(JSON.stringify(payload), recipientPublicKey);
         
             const newMessage: Omit<ChatMessage, 'id'> = {

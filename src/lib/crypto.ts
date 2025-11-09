@@ -60,27 +60,7 @@ export async function getMyPrivateKey(): Promise<CryptoKey | null> {
 /**
 * Get my public key from storage
 */
-export async function getMyPublicKey(): Promise<CryptoKey | null> {
-  const stored = localStorage.getItem('myKeyPair');
-  if (!stored) return null;
-
-  const parsed: StoredKeyPair = JSON.parse(stored);
-
-  const publicKey = await crypto.subtle.importKey(
-    'jwk',
-    parsed.publicKey,
-    { name: 'ECDH', namedCurve: 'P-256' },
-    true,
-    []
-  );
-
-  return publicKey;
-}
-
-/**
-* Export my public key as JWK (to share with others)
-*/
-export async function exportMyPublicKey(): Promise<JsonWebKey | null> {
+export async function getMyPublicKey(): Promise<JsonWebKey | null> {
   const stored = localStorage.getItem('myKeyPair');
   if (!stored) return null;
 
@@ -140,7 +120,7 @@ function ab2b64(buf: ArrayBuffer): string {
  */
 function b642ab(b64: string): ArrayBuffer {
   const buf = Buffer.from(b64, 'base64');
-  // Important: Dreate a new ArrayBuffer from the Buffer's underlying buffer
+  // Important: Create a new ArrayBuffer from the Buffer's underlying buffer
   return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
 }
 
@@ -183,14 +163,12 @@ export async function encrypt(
     ephemeralKeyPair.publicKey
   );
 
-  // CORRECT: Convert all binary data (iv, ciphertext) to Base64 strings *before* JSON.stringify
   const packaged: EncryptedPackage = {
     ephemPubKey: ephemeralPublicKeyJwk,
     iv: ab2b64(iv),
     ct: ab2b64(ciphertext),
   };
 
-  // Create the JSON string and then Base64 encode the *entire thing* for transport
   const packageString = JSON.stringify(packaged);
   return Buffer.from(packageString, 'utf-8').toString('base64');
 }
@@ -210,7 +188,6 @@ export async function decrypt(encryptedPackageB64: string): Promise<string> {
     throw new Error('Private key not found. Please initialize your key pair first.');
   }
 
-  // CORRECT: Base64-decode the outer package to get the JSON string
   let encryptedPackageString: string;
   try {
     encryptedPackageString = Buffer.from(encryptedPackageB64, 'base64').toString('utf-8');
@@ -231,7 +208,6 @@ export async function decrypt(encryptedPackageB64: string): Promise<string> {
     throw new Error('Invalid package: missing required crypto components.');
   }
   
-  // CORRECT: Convert the inner Base64 strings (iv, ct) back to ArrayBuffers
   const ivAb = b642ab(iv);
   const ciphertextAb = b642ab(ct);
 

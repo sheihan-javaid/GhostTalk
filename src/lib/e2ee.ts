@@ -4,7 +4,7 @@
 // All logic has been centralized in crypto.ts.
 
 export {
-  initializeKeyPair as initializeKeys,
-  exportMyPublicKey as getMyPublicKey,
+  initializeKeyPair,
+  getMyPublicKey,
   importPublicKey,
 } from './crypto';
