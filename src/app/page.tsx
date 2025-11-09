@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import imageData from '@/lib/placeholder-images.json';
+import Link from 'next/link';
 
 const regions = [
   { value: 'north-america', label: 'North America' },
@@ -300,6 +301,11 @@ export default function Home() {
       <footer className="mt-20 text-center text-muted-foreground text-sm">
         <p>Your privacy is paramount. All messages are end-to-end encrypted and metadata is stripped.</p>
         <p>No data is ever stored on our servers.</p>
+        <p className="mt-4">
+          <Link href="/api-test" className="underline hover:text-accent">
+            Test Gemini API Key
+          </Link>
+        </p>
       </footer>
     </div>
   );
