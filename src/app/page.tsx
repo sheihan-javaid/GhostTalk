@@ -1,14 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Ghost, Users, ArrowRight, Link as LinkIcon, UserPlus, Coffee, Globe } from 'lucide-react';
+import { Ghost, Users, ArrowRight, Link as LinkIcon, Coffee, Globe, Zap, MessageSquareQuote, BarChart, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useFirebase, initiateAnonymousSignIn, useUser } from '@/firebase';
-import { collection, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, serverTimestamp } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -74,6 +74,14 @@ export default function Home() {
   };
   
   const createPrivateRoom = () => createRoom(false);
+
+  const handleLoungeFeatureClick = (feature: string) => {
+    toast({
+        title: "Coming Soon!",
+        description: `${feature} is currently under development.`,
+        icon: <Zap className="h-5 w-5 text-accent" />
+    })
+  }
 
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen bg-background p-4 animate-in fade-in-0 duration-500">
@@ -148,23 +156,59 @@ export default function Home() {
           </CardContent>
         </Card>
         
-        <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-               <UserPlus className="h-8 w-8 text-accent" />
-               <span className="text-2xl font-headline">Create Group</span>
-            </CardTitle>
-            <CardDescription>
-              Create a private group and invite multiple people with a secret link.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={createPrivateRoom} variant="outline" className="w-full border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground font-semibold" disabled={!user}>
-              Create a Group
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </CardContent>
-        </Card>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50 cursor-pointer md:col-span-2">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-3">
+                    <Ghost className="h-8 w-8 text-accent" />
+                    <span className="text-2xl font-headline">Ghost Lounge</span>
+                    </CardTitle>
+                    <CardDescription>
+                        Explore experimental, privacy-focused chat modes.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="w-full text-center font-semibold text-accent">
+                        Enter the Lounge <ArrowRight className="inline-block ml-2 h-5 w-5" />
+                    </div>
+                </CardContent>
+            </Card>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl flex items-center gap-3">
+                <Ghost className="h-8 w-8 text-accent" />
+                Ghost Lounge
+              </DialogTitle>
+              <DialogDescription>
+                Explore experimental, privacy-focused chat modes. More features coming soon!
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+              <Button variant="outline" className="h-24 flex-col gap-2 border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground" onClick={() => handleLoungeFeatureClick('Whisper Mode')}>
+                <Zap className="h-6 w-6"/>
+                <span className="font-semibold">Whisper Mode</span>
+                <p className="text-xs font-normal text-muted-foreground">Ephemeral 1:1 chat</p>
+              </Button>
+              <Button variant="outline" className="h-24 flex-col gap-2 border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground" onClick={() => handleLoungeFeatureClick('Confession Wall')}>
+                <MessageSquareQuote className="h-6 w-6"/>
+                <span className="font-semibold">Confession Wall</span>
+                 <p className="text-xs font-normal text-muted-foreground">Public anonymous board</p>
+              </Button>
+              <Button variant="outline" className="h-24 flex-col gap-2 border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground" onClick={() => handleLoungeFeatureClick('Anonymous Poll')}>
+                <BarChart className="h-6 w-6"/>
+                <span className="font-semibold">Anonymous Poll</span>
+                <p className="text-xs font-normal text-muted-foreground">Get anonymous opinions</p>
+              </Button>
+              <Button variant="outline" className="h-24 flex-col gap-2 border-accent/50 text-accent hover:bg-accent hover:text-accent-foreground" onClick={() => handleLoungeFeatureClick('Ghost AI')}>
+                <Bot className="h-6 w-6"/>
+                <span className="font-semibold">Ghost AI</span>
+                <p className="text-xs font-normal text-muted-foreground">Privacy-first chatbot</p>
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
          <Card className="border-2 border-transparent hover:border-accent transition-all duration-300 transform hover:-translate-y-1 bg-secondary/50">
           <CardHeader>
