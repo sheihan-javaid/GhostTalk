@@ -28,10 +28,13 @@ service cloud.firestore {
 
       // ===== Messages Subcollection =====
       match /messages/{messageId} {
-        // Any authenticated user can read messages in any room
-        allow read: if request.auth != null;
+        // Any authenticated user can read or list messages in any room.
+        // 'list' is required for collection queries.
+        allow read, list: if request.auth != null;
+        
         // Any authenticated user can write messages to any room
         allow create: if request.auth != null;
+
         // Nobody can update or delete messages directly
         allow update, delete: if false;
       }
