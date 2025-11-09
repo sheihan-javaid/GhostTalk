@@ -8,6 +8,8 @@ service cloud.firestore {
       allow read: if true;
       // A user can create their own profile
       allow create: if request.auth != null && request.auth.uid == userId;
+      // A user can only update their own profile
+      allow update: if request.auth != null && request.auth.uid == userId;
 
       // ===== User Inbox Subcollection =====
       match /inbox/{messageId} {

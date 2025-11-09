@@ -3,7 +3,7 @@
 import { getMyPrivateKey } from './e2ee';
 
 // Helper: ArrayBuffer → Base64
-function ab2b64(buf: ArrayBuffer) {
+function ab2b64(buf: ArrayBuffer): string {
   let binary = '';
   const bytes = new Uint8Array(buf);
   const len = bytes.byteLength;
@@ -14,7 +14,7 @@ function ab2b64(buf: ArrayBuffer) {
 }
 
 // Helper: Base64 → ArrayBuffer
-function b642ab(b64: string) {
+function b642ab(b64: string): ArrayBuffer {
   const binary = atob(b64);
   const len = binary.length;
   const bytes = new Uint8Array(len);
@@ -24,7 +24,7 @@ function b642ab(b64: string) {
   return bytes.buffer;
 }
 
-export async function encrypt(text: string, recipientPublicKey: CryptoKey) {
+export async function encrypt(text: string, recipientPublicKey: CryptoKey): Promise<string> {
   const enc = new TextEncoder();
   const encodedText = enc.encode(text);
 
@@ -57,25 +57,29 @@ export async function encrypt(text: string, recipientPublicKey: CryptoKey) {
     ct: ab2b64(ciphertext),
   };
 
-  // Return a plain string, not binary
+  // Base64-encode the entire JSON package to ensure its integrity
   return btoa(JSON.stringify(packaged));
 }
 
-export async function decrypt(encryptedPackageB64: string) {
+export async function decrypt(encryptedPackageB64: string): Promise<string> {
   const myPrivateKey = await getMyPrivateKey();
   if (!myPrivateKey) throw new Error("Private key not found.");
 
-  // Decode Base64 to JSON string
+  // Decode Base64 to get the original JSON string
   const jsonStr = atob(encryptedPackageB64);
   let packaged;
   try {
     packaged = JSON.parse(jsonStr);
   } catch (err) {
-    console.error("Failed to parse JSON:", err, jsonStr.slice(0, 50));
+    console.error("Failed to parse JSON:", err, jsonStr.slice(0, 100));
     throw new Error("Corrupted message — not valid JSON.");
   }
 
   const { ephemPubKey, iv, ct } = packaged;
+
+  if (!ephemPubKey || !iv || !ct) {
+    throw new Error("Invalid encrypted package structure.");
+  }
 
   const ivAb = b642ab(iv);
   const ciphertextAb = b642ab(ct);

@@ -10,7 +10,7 @@ import ChatHeader from './chat-header';
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Loader2, KeyRound } from 'lucide-react';
 import { useFirebase, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, updateDoc, Timestamp, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp } from 'firebase/firestore';
 import { addDocumentNonBlocking, updateDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { decrypt, encrypt } from '@/lib/crypto';
 import { getMyPublicKey, initializeKeys, importPublicKey } from '@/lib/e2ee';
@@ -139,7 +139,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     publishPresence();
   }, [roomRef, user, userName, isKeysLoading, roomData]);
 
-  // NEW: Query the user's personal inbox
+  // Query the user's personal inbox
   const messagesQuery = useMemoFirebase(() => {
     if (!firestore || !user || isRoomLoading) return null;
     return query(
@@ -186,8 +186,8 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
             console.error(`Decryption error for message ID ${msg.id}:`, e);
             return { // Return a message indicating failure
               id: msg.id,
-              text: '[Decryption Failed - Message may be corrupt]',
-              userId: msg.senderId,
+              text: '[Decryption Failed - This message may be corrupt or from an older session]',
+              userId: 'system',
               username: 'System',
               timestamp: msg.timestamp,
               anonymized: false,
@@ -249,20 +249,24 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
             continue;
         }
 
-        const recipientPublicKey = await importPublicKey(recipientInfo.publicKey);
-        const encryptedPayload = await encrypt(JSON.stringify(payload), recipientPublicKey);
-      
-        const newMessage: Omit<ChatMessage, 'id'> = {
-            senderId: user.uid,
-            senderName: userName,
-            encryptedPayload: encryptedPayload,
-            timestamp: serverTimestamp(),
-            anonymized: shouldAnonymize && rawText !== textToSend,
-            expireAt: ttl,
-        };
+        try {
+            const recipientPublicKey = await importPublicKey(recipientInfo.publicKey);
+            const encryptedPayload = await encrypt(JSON.stringify(payload), recipientPublicKey);
+        
+            const newMessage: Omit<ChatMessage, 'id'> = {
+                senderId: user.uid,
+                senderName: userName,
+                encryptedPayload: encryptedPayload,
+                timestamp: serverTimestamp(),
+                anonymized: shouldAnonymize && rawText !== textToSend,
+                expireAt: ttl,
+            };
 
-        const inboxRef = collection(firestore, 'users', recipientId, 'inbox');
-        addDocumentNonBlocking(inboxRef, newMessage);
+            const inboxRef = collection(firestore, 'users', recipientId, 'inbox');
+            addDocumentNonBlocking(inboxRef, newMessage);
+        } catch (e) {
+            console.error(`Failed to encrypt and send to ${recipientId}`, e)
+        }
       }
     } catch (error: any) {
       console.error("Failed to send message:", error);
