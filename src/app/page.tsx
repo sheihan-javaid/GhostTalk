@@ -288,6 +288,7 @@ export default function Home() {
                         />
                     </div>
                     <p className="text-sm text-muted-foreground">Scan to donate anonymously</p>
+                    <p className="text-sm text-muted-foreground">or pay using the link below</p>
                     <a
                         href="https://razorpay.me/@mohammadsheihanjavaid"
                         target="_blank"
