@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { anonymizeMessage } from '@/ai/flows/anonymize-message-metadata';
-import { encrypt } from '@/lib/crypto';
+import { useFileEncryption } from '@/hooks/use-file-encryption';
 import type { Message } from '@/lib/types';
 import MessageList from './message-list';
 import MessageInput from './message-input';
@@ -19,6 +19,7 @@ export default function ChatLayout({ roomId }: { roomId: string }) {
   const [messageExpiry, setMessageExpiry] = useState<number>(300); // 5 minutes in seconds
   const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
+  const { encryptFile, decryptFile } = useFileEncryption();
 
   useEffect(() => {
     // Generate a temporary, session-only user identity.
@@ -28,12 +29,11 @@ export default function ChatLayout({ roomId }: { roomId: string }) {
     // Simulate initial welcome message from another user
     async function showWelcomeMessage() {
       const welcomeText = `Welcome to room ${roomId === 'random-lobby' ? 'Random Lobby' : 'privée'}. Remember, what is said in the shadows, stays in the shadows.`;
-      const encryptedText = await encrypt(welcomeText);
-
+      
       const welcomeMessage: Message = {
         id: crypto.randomUUID(),
         text: welcomeText,
-        encryptedText: encryptedText,
+        encryptedText: '',
         userId: GHOST_USER_ID,
         username: GHOST_USER_NAME,
         timestamp: Date.now(),
@@ -60,13 +60,13 @@ export default function ChatLayout({ roomId }: { roomId: string }) {
   }, [messageExpiry]);
 
 
-  const handleSendMessage = useCallback(async (rawText: string, shouldAnonymize: boolean) => {
-    if (!rawText.trim() || isSending) return;
+  const handleSendMessage = useCallback(async (rawText: string, shouldAnonymize: boolean, file?: File) => {
+    if ((!rawText.trim() && !file) || isSending) return;
     setIsSending(true);
 
     try {
       let textToSend = rawText;
-      if (shouldAnonymize) {
+      if (shouldAnonymize && rawText.trim()) {
         const result = await anonymizeMessage({ message: rawText });
         textToSend = result.anonymizedMessage;
         if (rawText !== textToSend) {
@@ -76,17 +76,22 @@ export default function ChatLayout({ roomId }: { roomId: string }) {
           })
         }
       }
-
-      const encryptedText = await encrypt(textToSend);
+      
+      const fileData = file ? await encryptFile(file) : undefined;
 
       const newMessage: Message = {
         id: crypto.randomUUID(),
         text: textToSend, // In a real app, this would be decrypted on receive
-        encryptedText,
+        encryptedText: '',
         userId: userId,
         username: userName,
         timestamp: Date.now(),
-        anonymized: shouldAnonymize && rawText !== textToSend
+        anonymized: shouldAnonymize && rawText !== textToSend,
+        file: fileData ? {
+          name: file.name,
+          type: file.type,
+          data: fileData,
+        } : undefined,
       };
       
       setMessages(prev => [...prev, newMessage]);
@@ -94,11 +99,10 @@ export default function ChatLayout({ roomId }: { roomId: string }) {
       // Simulate a reply from another user
       setTimeout(async () => {
         const replyText = "Interesting...";
-        const encryptedReply = await encrypt(replyText);
         const replyMessage: Message = {
           id: crypto.randomUUID(),
           text: replyText,
-          encryptedText: encryptedReply,
+          encryptedText: '',
           userId: GHOST_USER_ID,
           username: GHOST_USER_NAME,
           timestamp: Date.now(),
@@ -108,17 +112,17 @@ export default function ChatLayout({ roomId }: { roomId: string }) {
       }, 1500 + Math.random() * 1000);
 
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to send message:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Could not send message. Please try again.",
+        description: error.message || "Could not send message. Please try again.",
       });
     } finally {
       setIsSending(false);
     }
-  }, [isSending, userId, userName, toast]);
+  }, [isSending, userId, userName, toast, encryptFile]);
   
 
   return (

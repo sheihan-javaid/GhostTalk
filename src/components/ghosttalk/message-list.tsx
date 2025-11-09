@@ -1,9 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Message } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Shield, User } from 'lucide-react';
+import { Shield, User, Paperclip, Download } from 'lucide-react';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface MessageListProps {
   messages: Message[];
@@ -31,7 +33,44 @@ function MessageItem({ message, isCurrentUser }: { message: Message, isCurrentUs
         <span className="text-xs text-muted-foreground">{!isCurrentUser ? message.username : 'You'}</span>
       </div>
       <div className={cn("max-w-xs md:max-w-md lg:max-w-2xl p-3 rounded-xl shadow-md", bubbleClass)}>
-        <p className="text-sm break-words">{message.text}</p>
+        {message.text && <p className="text-sm break-words">{message.text}</p>}
+        {message.file && (
+          <div className="mt-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full justify-start text-left h-auto p-2">
+                  <div className="flex items-center gap-2">
+                    <Paperclip className="h-5 w-5" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{message.file.name}</span>
+                       <span className="text-xs text-muted-foreground">Click to view</span>
+                    </div>
+                  </div>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>{message.file.name}</DialogTitle>
+                </DialogHeader>
+                <div className="mt-4">
+                  {message.file.type.startsWith('image/') ? (
+                    <img src={message.file.data} alt={message.file.name} className="max-w-full h-auto rounded-md" />
+                  ) : (
+                    <div className="p-4 bg-muted rounded-md text-center">
+                      <p>Unsupported file type for preview.</p>
+                       <a href={message.file.data} download={message.file.name}>
+                        <Button className="mt-4">
+                          <Download className="mr-2 h-4 w-4" />
+                          Download
+                        </Button>
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span>{formattedTime}</span>

@@ -6,4 +6,9 @@ export interface Message {
   username: string;
   timestamp: number;
   anonymized: boolean;
+  file?: {
+    name: string;
+    type: string;
+    data: string; // base64 encoded
+  };
 }
