@@ -9,11 +9,11 @@ export async function testApiKey(): Promise<string> {
     }
 
     const response = await ai.generate({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-pro',
       prompt: "Hello! If you can see this, respond with a single word: 'Success!'",
     });
     
-    return `Success! API Response for model gemini-1.5-flash: "${response.text}"`;
+    return `Success! API Response for model gemini-pro: "${response.text}"`;
     
   } catch (err: any) {
     console.error('API Key Test Error (Genkit):', err);
