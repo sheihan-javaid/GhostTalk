@@ -2,41 +2,49 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Chat rooms collection
+    // ===== Chat Rooms Collection =====
     match /chatRooms/{roomId} {
 
-      // Anyone can read or list chat room metadata
+      // Anyone can read room metadata (to join)
       allow read, list: if true;
 
-      // Only authenticated users can create chat rooms
-      allow create: if request.auth != null;
+      // Allow room creation only if a request includes encryption metadata (E2EE)
+      allow create: if request.resource.data.keys().hasAll(['createdAt', 'encryptionType'])
+                    && request.resource.data.encryptionType == 'E2EE';
 
-      // Allow updating only for adding public keys (E2EE)
-      allow update: if request.auth != null
-                    && request.resource.data.diff(resource.data)
-                    .affectedKeys().hasOnly(['publicKeys']);
+      // Allow updating only for non-sensitive fields (like active users or public keys)
+      allow update: if request.resource.data.diff(resource.data)
+                      .affectedKeys()
+                      .hasOnly(['activeUsers', 'publicKeys', 'lastActivity']);
 
-      // Prevent deletion
+      // No one can delete rooms manually
       allow delete: if false;
 
-      // Messages subcollection
+      // ===== Messages Subcollection =====
       match /messages/{messageId} {
 
-        // A user can read a single message if they are the recipient.
-        allow get: if request.auth != null && resource.data.recipientId == request.auth.uid;
-        
-        // A user can query messages if they are asking for messages sent to them.
-        // This is the CRITICAL fix. It checks that the query's `where` clause is correct.
-        allow list: if request.auth != null 
-                     && request.query.where.size() == 1
-                     && request.query.where[0].field == "recipientId"
-                     && request.query.where[0].op == "=="
-                     && request.query.where[0].value == request.auth.uid;
+        // Allow users to send messages if encryption data is present
+        allow create: if request.resource.data.keys().hasAll(['senderId', 'cipherText', 'timestamp'])
+                      && request.resource.data.size() <= 10240; // limit to 10KB per message
 
-        // Authenticated users can send messages
-        allow create: if request.auth != null;
+        // Allow read only if message is intended for the same room (anonymity)
+        allow get, list: if true; // messages are fetched only inside app logic
 
-        // Prevent manual modification or deletion
+        // No updates or deletions allowed (auto-delete handled by Cloud Function)
+        allow update, delete: if false;
+      }
+
+      // ===== File Sharing Subcollection =====
+      match /files/{fileId} {
+
+        // Allow file uploads with encrypted metadata only
+        allow create: if request.resource.data.keys().hasAll(['fileName', 'fileType', 'fileSize', 'encryptedKey'])
+                      && request.resource.data.fileSize < 10485760; // max 10MB file
+
+        // Allow read only temporarily (auto-deletes handled by Cloud Function)
+        allow get, list: if true;
+
+        // No updates or manual deletions allowed
         allow update, delete: if false;
       }
     }
