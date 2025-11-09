@@ -7,14 +7,15 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {Part} from 'genkit';
 
 // This defines the structure of a single message in the chat history.
 interface HistoryMessage {
   role: 'user' | 'model';
-  content: { text: string }[];
+  content: string[];
 }
 
-export async function ghostChat(history: { role: 'user' | 'model'; content: string[] }[]): Promise<string> {
+export async function ghostChat(history: HistoryMessage[]): Promise<string> {
   // Transform the incoming history to the format Genkit's `generate` function expects for chat history.
   const genkitHistory = history.map(msg => ({
     role: msg.role,
