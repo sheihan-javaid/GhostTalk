@@ -9,64 +9,25 @@ interface ChatMessage {
   content: string[];
 }
 
-/**
- * Ensures the chat history alternates between 'user' and 'model' roles,
- * starting with a 'user' role. This is a requirement for the Gemini API.
- */
-function formatAndValidateHistory(history: ChatMessage[]) {
-    const validatedHistory: { role: 'user' | 'model'; parts: { text: string }[] }[] = [];
-    let lastRole: 'user' | 'model' | null = null;
-
-    // Find the first user message and start from there
-    const firstUserIndex = history.findIndex(msg => msg.role === 'user');
-    if (firstUserIndex === -1) {
-        // If there are no user messages, we can't send anything.
-        // This might happen if history only contains a greeting.
-        // Send only the last message if it's from the user.
-        const lastMessage = history[history.length -1];
-        if (lastMessage && lastMessage.role === 'user') {
-            return [
-                {
-                    role: 'user',
-                    parts: lastMessage.content.map(text => ({ text }))
-                }
-            ];
-        }
-        return [];
-    }
-
-    const processableHistory = history.slice(firstUserIndex);
-
-    for (const msg of processableHistory) {
-        if (msg.role !== lastRole) {
-            validatedHistory.push({
-                role: msg.role,
-                parts: msg.content.map(text => ({ text }))
-            });
-            lastRole = msg.role;
-        } else {
-            // If the role is the same as the last one, merge the content.
-            // This handles cases like [user, user] by combining them.
-            const lastEntry = validatedHistory[validatedHistory.length - 1];
-            const newParts = msg.content.map(text => ({ text }));
-            lastEntry.parts.push(...newParts);
-        }
-    }
-    return validatedHistory;
-}
-
-
 export async function ghostChat(history: ChatMessage[]): Promise<string> {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    // Format and validate the history before sending
-    const formattedHistory = formatAndValidateHistory(history);
+    // The Gemini API requires that the history starts with a 'user' role.
+    // If the first message is from the 'model' (our greeting), we must skip it.
+    const startIndex = history.length > 0 && history[0].role === 'model' ? 1 : 0;
+    const processableHistory = history.slice(startIndex);
 
-    if (formattedHistory.length === 0) {
+    // If after slicing, there are no messages left to process, we can't call the API.
+    if (processableHistory.length === 0) {
       return "I need a message from you to get started!";
     }
 
+    const formattedHistory = processableHistory.map(msg => ({
+      role: msg.role,
+      parts: msg.content.map(text => ({ text })),
+    }));
+    
     const result = await model.generateContent({
       contents: formattedHistory,
       generationConfig: {
