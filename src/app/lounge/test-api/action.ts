@@ -16,7 +16,7 @@ export async function testApiKeyAction(): Promise<string> {
 
     try {
         const completion = await openai.chat.completions.create({
-            model: 'nousresearch/nous-hermes-2-mistral-7b-dpo',
+            model: 'openrouter/cinematika-7b:free',
             messages: [{ role: 'user', content: 'Say "hello".' }],
             max_tokens: 5,
         });

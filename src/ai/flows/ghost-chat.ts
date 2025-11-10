@@ -39,7 +39,7 @@ export async function ghostChat(history: any[]): Promise<string> {
         const openAIHistory = mapHistoryToOpenAI(history);
 
         const completion = await openai.chat.completions.create({
-            model: 'nousresearch/nous-hermes-2-mistral-7b-dpo',
+            model: 'openrouter/cinematika-7b:free',
             messages: openAIHistory,
         });
         
