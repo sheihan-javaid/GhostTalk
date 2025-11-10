@@ -44,7 +44,7 @@ export default function MessageInput({ onSendMessage, isSending }: MessageInputP
             handleSubmit(e);
           }
         }}
-        placeholder="Type your secret message..."
+        placeholder={isSending ? "Joining room..." : "Type your secret message..."}
         className="resize-none max-h-40 overflow-y-auto"
         rows={1}
         disabled={isSending}

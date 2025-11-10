@@ -35,7 +35,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
   const [isRoomLoading, setIsRoomLoading] = useState(true);
   const [currentRoomId, setCurrentRoomId] = useState(initialRoomId);
   const [isWhisper, setIsWhisper] = useState(false);
-  const [isParticipant, setIsParticipant] = useState(false); // New state to track participation
+  const [isParticipant, setIsParticipant] = useState(false);
 
   const { toast } = useToast();
   const { firestore } = useFirebase();
@@ -100,7 +100,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
                         name: userName
                     }
                 });
-                setIsParticipant(true); // Set participant status to true
+                setIsParticipant(true); 
             }
         }
     }
@@ -150,18 +150,18 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
   
   // Query messages for the current room
   const messagesQuery = useMemoFirebase(() => {
-    if (!firestore || !currentRoomId || isRoomLoading || !isParticipant) return null; // Wait for participation
+    if (!firestore || !currentRoomId || isRoomLoading || !isParticipant) return null;
     return query(
       collection(firestore, 'chatRooms', currentRoomId, 'messages'),
       orderBy('timestamp', 'asc')
     );
-  }, [firestore, currentRoomId, isRoomLoading, isParticipant]); // Depend on isParticipant
+  }, [firestore, currentRoomId, isRoomLoading, isParticipant]);
 
   const { data: firestoreMessages } = useCollection<Omit<ChatMessage, 'id' | 'text'>>(messagesQuery);
   
   // Process and decrypt messages as they arrive
   useEffect(() => {
-    if (!firestoreMessages || !isParticipant) return; // Wait for participation
+    if (!firestoreMessages || !isParticipant) return; 
 
     const processMessages = async () => {
       const now = Date.now();
@@ -203,11 +203,11 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     };
 
     processMessages();
-  }, [firestoreMessages, settings.messageExpiry, isParticipant]); // Depend on isParticipant
+  }, [firestoreMessages, settings.messageExpiry, isParticipant]);
 
 
   const handleSendMessage = useCallback(async (rawText: string, shouldAnonymize: boolean) => {
-    if (!rawText.trim() || isSending || !user || !userName || !currentRoomId || !firestore) return;
+    if (!rawText.trim() || isSending || !user || !userName || !currentRoomId || !firestore || !isParticipant) return;
     setIsSending(true);
 
     try {
@@ -277,7 +277,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     } finally {
       setIsSending(false);
     }
-  }, [isSending, user, userName, currentRoomId, toast, firestore]);
+  }, [isSending, user, userName, currentRoomId, toast, firestore, isParticipant]);
 
   const handleDeleteMessage = useCallback(async (messageId: string) => {
     if (!firestore || !currentRoomId) return;
@@ -372,7 +372,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
         />
       </div>
       <div className="p-4 md:p-6 border-t border-border bg-background/80 backdrop-blur-sm">
-        <MessageInput onSendMessage={handleSendMessage} isSending={isSending} />
+        <MessageInput onSendMessage={handleSendMessage} isSending={isSending || !isParticipant} />
       </div>
     </div>
   );

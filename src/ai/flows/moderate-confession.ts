@@ -18,9 +18,9 @@ export async function moderateConfession(text: string): Promise<{ isAppropriate:
         messages: [
             {
                 role: 'system',
-                content: `You are a content moderator. Your task is to determine if the following text is appropriate.
-The content should not contain hate speech, harassment, explicit content, or personally identifiable information.
-Respond with a JSON object with two keys: "isAppropriate" (boolean) and "reason" (string, optional).`
+                content: `You are a content moderator. Your task is to determine if the following text is appropriate for a public forum.
+The content should not contain hate speech, harassment, explicit content, or personally identifiable information (like real names, addresses, emails, or phone numbers).
+Respond with a JSON object with two keys: "isAppropriate" (boolean) and "reason" (a string explaining your decision if it's not appropriate).`
             },
             {
                 role: 'user',
@@ -39,13 +39,18 @@ Respond with a JSON object with two keys: "isAppropriate" (boolean) and "reason"
 
     const parsedResponse = JSON.parse(responseJson);
 
+    // Ensure the response has the expected shape
+    if (typeof parsedResponse.isAppropriate !== 'boolean') {
+      throw new Error('Moderator returned an invalid response format.');
+    }
+
     return {
       isAppropriate: parsedResponse.isAppropriate,
       reason: parsedResponse.reason,
     };
   } catch (error) {
     console.error('Failed to moderate confession with OpenRouter:', error);
-    // Fail closed: if moderation fails, assume it's not appropriate
+    // Fail closed: if moderation fails for any reason, assume it's not appropriate
     return {
       isAppropriate: false,
       reason: 'Content could not be automatically verified by the moderator.',
