@@ -32,7 +32,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
   const [userName, setUserName] = useState('');
   const [settings, setSettings] = useState<UiSettings>(defaultSettings);
   const [isSending, setIsSending] = useState(false);
-  const [isRoomLoading, setIsRoomLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentRoomId, setCurrentRoomId] = useState(initialRoomId);
   const [isWhisper, setIsWhisper] = useState(false);
   const [isParticipant, setIsParticipant] = useState(false);
@@ -40,12 +40,12 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
   const { toast } = useToast();
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
-  
 
-  // Initialize user profile and crypto keys
+  // Step 1: Initialize User Profile and Crypto Keys, then set ready state.
   useEffect(() => {
     const initUser = async () => {
       if (user && firestore) {
+        setIsLoading(true);
         // Initialize crypto key pair if it doesn't exist
         await crypto.initializeKeyPair();
 
@@ -70,48 +70,16 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
             await setDocumentNonBlocking(userDocRef, { uid: user.uid, anonymousName: name }, { merge: true });
           }
         }
+        // Only after name is set, we can proceed
       }
     };
     initUser();
   }, [user, firestore]);
   
-  // Join room and publish public key
-  useEffect(() => {
-    const joinRoom = async () => {
-        if (user && firestore && userName && currentRoomId && !isRoomLoading) {
-            const roomDocRef = doc(firestore, 'chatRooms', currentRoomId);
-            const roomSnap = await getDoc(roomDocRef);
-            if (!roomSnap.exists()) {
-                toast({ variant: 'destructive', title: 'Error', description: 'This room does not exist.' });
-                router.push('/');
-                return;
-            }
-
-            if(roomSnap.data().isWhisper) {
-                setIsWhisper(true);
-            }
-
-            const publicKeyJwk = await crypto.exportMyPublicKey();
-            
-            if (publicKeyJwk) {
-                await updateDoc(roomDocRef, {
-                    [`participants.${user.uid}`]: {
-                        publicKey: publicKeyJwk,
-                        name: userName
-                    }
-                });
-                setIsParticipant(true); 
-            }
-        }
-    }
-    joinRoom();
-  }, [user, firestore, userName, currentRoomId, isRoomLoading, router, toast]);
-
-  // Resolve dynamic lobby rooms
+  // Step 2: Resolve dynamic lobby rooms. This can happen in parallel.
   useEffect(() => {
     const resolveLobby = async () => {
       if (initialRoomId.startsWith('lobby-') && firestore) {
-        setIsRoomLoading(true);
         const region = initialRoomId.replace('lobby-', '');
         const roomsRef = collection(firestore, 'chatRooms');
         const q = query(
@@ -138,28 +106,59 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
           }
         } catch (error) {
           console.error("Error resolving lobby:", error);
-        } finally {
-          setIsRoomLoading(false);
+          toast({ variant: 'destructive', title: 'Lobby Error', description: 'Could not find or create a public lobby.' });
+          router.push('/');
         }
-      } else {
-        setIsRoomLoading(false);
       }
     };
     resolveLobby();
-  }, [initialRoomId, firestore]);
+  }, [initialRoomId, firestore, router, toast]);
+
+  // Step 3: Join room and publish public key. This depends on userName and currentRoomId being ready.
+  useEffect(() => {
+    const joinRoom = async () => {
+        if (user && firestore && userName && currentRoomId) {
+            const roomDocRef = doc(firestore, 'chatRooms', currentRoomId);
+            const roomSnap = await getDoc(roomDocRef);
+            if (!roomSnap.exists()) {
+                toast({ variant: 'destructive', title: 'Error', description: 'This room does not exist.' });
+                router.push('/');
+                return;
+            }
+
+            if(roomSnap.data().isWhisper) {
+                setIsWhisper(true);
+            }
+
+            const publicKeyJwk = await crypto.exportMyPublicKey();
+            
+            if (publicKeyJwk) {
+                await updateDoc(roomDocRef, {
+                    [`participants.${user.uid}`]: {
+                        publicKey: publicKeyJwk,
+                        name: userName
+                    }
+                });
+                setIsParticipant(true); 
+                setIsLoading(false); // All setup is done, stop loading.
+            }
+        }
+    }
+    joinRoom();
+  }, [user, firestore, userName, currentRoomId, router, toast]);
   
-  // Query messages for the current room
+  // Step 4: Query messages for the current room, depends on being a participant.
   const messagesQuery = useMemoFirebase(() => {
-    if (!firestore || !currentRoomId || isRoomLoading || !isParticipant) return null;
+    if (!firestore || !currentRoomId || isLoading || !isParticipant) return null;
     return query(
       collection(firestore, 'chatRooms', currentRoomId, 'messages'),
       orderBy('timestamp', 'asc')
     );
-  }, [firestore, currentRoomId, isRoomLoading, isParticipant]);
+  }, [firestore, currentRoomId, isLoading, isParticipant]);
 
   const { data: firestoreMessages } = useCollection<Omit<ChatMessage, 'id' | 'text'>>(messagesQuery);
   
-  // Process and decrypt messages as they arrive
+  // Step 5: Process and decrypt messages as they arrive
   useEffect(() => {
     if (!firestoreMessages || !isParticipant) return; 
 
@@ -351,7 +350,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
 
   }, [settings]);
 
-  if (isUserLoading || isRoomLoading || !userName || !isParticipant) {
+  if (isUserLoading || isLoading || !userName) {
     return <LoadingGhost />;
   }
 

@@ -92,7 +92,7 @@ export async function exportMyPublicKey(): Promise<JsonWebKey | null> {
  */
 export async function importPublicKey(jwk: JsonWebKey): Promise<CryptoKey> {
   if (!jwk || !jwk.kty) {
-    throw new Error('Invalid public key JWK');
+    throw new Error('Invalid public key JWK: Missing key type property.');
   }
   
   const publicKey = await crypto.subtle.importKey(
@@ -110,8 +110,17 @@ export async function importPublicKey(jwk: JsonWebKey): Promise<CryptoKey> {
  * Initialize key pair if not exists
  */
 export async function initializeKeyPair(): Promise<void> {
-  const existing = localStorage.getItem('myKeyPair');
-  if (existing) return;
+  try {
+    const existing = localStorage.getItem('myKeyPair');
+    if (existing) {
+        // Optional: Validate the existing key pair format
+        JSON.parse(existing);
+        return;
+    }
+  } catch (e) {
+      // Corrupted key in storage, will proceed to generate a new one
+      console.warn("Could not parse existing key pair, generating new one.", e);
+  }
   
   const keyPair = await generateKeyPair();
   await storeMyKeyPair(keyPair);
@@ -199,7 +208,7 @@ export async function encrypt(
  */
 export async function decrypt(encryptedPackageB64: string): Promise<string> {
   if (!encryptedPackageB64 || typeof encryptedPackageB64 !== 'string') {
-    throw new Error('Invalid encrypted package: must be a non-empty string');
+    throw new Error('Invalid encrypted package: must be a non-empty string.');
   }
   
   const myPrivateKey = await getMyPrivateKey();
@@ -219,12 +228,12 @@ export async function decrypt(encryptedPackageB64: string): Promise<string> {
     packaged = JSON.parse(encryptedPackageString);
   } catch (err) {
     console.error('Failed to parse JSON. Raw data:', encryptedPackageString.substring(0, 100));
-    throw new Error('Failed to parse encrypted package. Data may be corrupted or encrypted for wrong key.');
+    throw new Error('Failed to parse encrypted package JSON. Data may be corrupted or encrypted for wrong key.');
   }
   
   const { ephemPubKey, iv, ct } = packaged;
-  if (!ephemPubKey || !ephemPubKey.kty || !iv || !ct) {
-    throw new Error('Invalid package structure: missing ephemPubKey, iv, or ct.');
+  if (!ephemPubKey || typeof ephemPubKey !== 'object' || !ephemPubKey.kty || !iv || !ct) {
+    throw new Error('Invalid package structure: missing or malformed ephemPubKey, iv, or ct.');
   }
   
   let ivAb: ArrayBuffer;
@@ -233,7 +242,7 @@ export async function decrypt(encryptedPackageB64: string): Promise<string> {
     ivAb = b642ab(iv);
     ciphertextAb = b642ab(ct);
   } catch (err) {
-    throw new Error('Failed to decode IV or ciphertext. Data may be corrupted.');
+    throw new Error('Failed to decode IV or ciphertext from Base64. Data may be corrupted.');
   }
   
   const senderEphemeralPublicKey = await importPublicKey(ephemPubKey);
@@ -257,6 +266,6 @@ export async function decrypt(encryptedPackageB64: string): Promise<string> {
     return dec.decode(decryptedAb);
   } catch (err) {
     console.error('Decryption failed:', err);
-    throw new Error('Decryption failed. The message may be corrupted or encrypted for a different recipient.');
+    throw new Error('Decryption failed. The message may be corrupted or intended for a different recipient.');
   }
 }

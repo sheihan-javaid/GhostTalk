@@ -20,6 +20,7 @@ export default function WhisperPage() {
   const [whisperLink, setWhisperLink] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const { toast } = useToast();
 
   const createWhisperRoom = async () => {
@@ -56,6 +57,7 @@ export default function WhisperPage() {
         
         const generatedLink = `${window.location.origin}/chat/${docRef.id}`;
         setWhisperLink(generatedLink);
+        setIsRedirecting(true);
         // Automatically navigate to the chat room
         router.push(`/chat/${docRef.id}`);
       }
@@ -66,7 +68,6 @@ export default function WhisperPage() {
         title: "Error",
         description: "Could not create Whisper Room.",
       });
-    } finally {
       setIsCreating(false);
     }
   };
@@ -81,9 +82,40 @@ export default function WhisperPage() {
   
   const joinChat = () => {
     if (whisperLink) {
+        setIsRedirecting(true);
         const roomId = whisperLink.split('/').pop();
         router.push(`/chat/${roomId}`);
     }
+  }
+
+  const renderContent = () => {
+    if (isRedirecting) {
+        return (
+            <div className="text-center space-y-2">
+                <Loader2 className="animate-spin mx-auto text-accent"/>
+                <p className="text-sm text-muted-foreground">You are being redirected to your secure room...</p>
+            </div>
+        );
+    }
+    if (whisperLink) {
+        return (
+             <div className="space-y-4">
+              <p className="text-sm text-muted-foreground text-center">A secure room has been created. Use the button below to join or copy the link to share.</p>
+              <div className="flex items-center gap-2">
+                <Input type="text" readOnly value={whisperLink} />
+                <Button size="icon" variant="outline" onClick={copyToClipboard}>
+                  {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+              <Button onClick={joinChat} className="w-full">Join Chat</Button>
+            </div>
+        );
+    }
+    return (
+        <Button onClick={createWhisperRoom} disabled={isCreating || !user} className="w-full">
+            {isCreating ? <Loader2 className="animate-spin" /> : 'Generate Secure Link & Join'}
+        </Button>
+    )
   }
 
   return (
@@ -100,22 +132,7 @@ export default function WhisperPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {whisperLink ? (
-             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground text-center">A secure room has been created. Use the button below to join or copy the link to share.</p>
-              <div className="flex items-center gap-2">
-                <Input type="text" readOnly value={whisperLink} />
-                <Button size="icon" variant="outline" onClick={copyToClipboard}>
-                  {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-              <Button onClick={joinChat} className="w-full">Join Chat</Button>
-            </div>
-          ) : (
-             <Button onClick={createWhisperRoom} disabled={isCreating || !user} className="w-full">
-              {isCreating ? <Loader2 className="animate-spin" /> : 'Generate Secure Link & Join'}
-            </Button>
-          )}
+            {renderContent()}
         </CardContent>
       </Card>
     </div>
