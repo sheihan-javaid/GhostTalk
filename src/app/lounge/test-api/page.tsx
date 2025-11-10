@@ -5,38 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, TestTube } from 'lucide-react';
-import OpenAI from 'openai';
-
-// This is a client-side component, so we can't use process.env directly
-// after the build. We'll create a server action to securely access the key.
-// For this simple test, we will create a simple server action in this file.
-
-async function testApiKeyAction(): Promise<string> {
-    'use server';
-    const apiKey = process.env.OPENROUTER_API_KEY;
-
-    if (!apiKey || apiKey === 'YOUR_OPENROUTER_API_KEY') {
-        return 'Error: OPENROUTER_API_KEY is not set in your .env file.';
-    }
-
-    const openai = new OpenAI({
-        baseURL: 'https://openrouter.ai/api/v1',
-        apiKey: apiKey,
-    });
-
-    try {
-        const completion = await openai.chat.completions.create({
-            model: 'nousresearch/nous-hermes-2-mistral-7b-dpo',
-            messages: [{ role: 'user', content: 'Say "hello".' }],
-            max_tokens: 5,
-        });
-        const response = completion.choices[0].message.content;
-        return `Success! API responded: "${response}"`;
-    } catch (error: any) {
-        console.error('API Key Test Error:', error);
-        return `Failure: An error occurred. Check the server console for details. Error message: ${error.message}`;
-    }
-}
+import { testApiKeyAction } from './action';
 
 
 export default function TestApiKeyPage() {
