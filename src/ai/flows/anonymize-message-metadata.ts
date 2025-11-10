@@ -20,7 +20,7 @@ const openai = new OpenAI({
 export async function anonymizeMessage(input: z.infer<typeof AnonymizeMessageInputSchema>): Promise<z.infer<typeof AnonymizeMessageOutputSchema>> {
   try {
     const completion = await openai.chat.completions.create({
-      model: 'mistralai/mistral-7b-instruct:free', 
+      model: 'nousresearch/nous-hermes-2-mistral-7b-dpo', 
       messages: [
         {
           role: 'system',

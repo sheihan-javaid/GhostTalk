@@ -22,8 +22,15 @@ function mapHistoryToOpenAI(history: any[]): ChatCompletionMessageParam[] {
 }
 
 export async function ghostChat(history: any[]): Promise<string> {
-    if (!openai) {
+    if (!apiKey) {
         const errorMessage = "AI service is not configured. Please set the OPENROUTER_API_KEY in your .env file.";
+        console.error('Ghost AI Error:', errorMessage);
+        return `❌ ${errorMessage}`;
+    }
+
+    if (!openai) {
+        // This case should ideally not be hit if apiKey is present, but it's good practice
+        const errorMessage = "AI client failed to initialize.";
         console.error('Ghost AI Error:', errorMessage);
         return `❌ ${errorMessage}`;
     }
@@ -32,7 +39,7 @@ export async function ghostChat(history: any[]): Promise<string> {
         const openAIHistory = mapHistoryToOpenAI(history);
 
         const completion = await openai.chat.completions.create({
-            model: 'mistralai/mistral-7b-instruct:free',
+            model: 'nousresearch/nous-hermes-2-mistral-7b-dpo',
             messages: openAIHistory,
         });
         
@@ -44,7 +51,7 @@ export async function ghostChat(history: any[]): Promise<string> {
 }
 
 export async function getGhostAIGreeting(): Promise<string> {
-  if (!openai) {
+  if (!apiKey || !openai) {
       return "Hello! 👋 I’m GhostAI. My AI capabilities are currently offline as I'm missing an API key, but I'm here to chat. What's on your mind?";
   }
   return "Hello! 👋 I’m GhostAI, your whisper in the digital void. I'm here to help you with questions, creative projects, coding, analysis, and much more without leaving any traces. What can I help you with today?";
