@@ -3,9 +3,10 @@
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 
-const apiKey = process.env.OPENAI_API_KEY;
+const apiKey = process.env.OPENROUTER_API_KEY;
 
 const openai = apiKey ? new OpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
   apiKey: apiKey,
 }) : null;
 
@@ -22,7 +23,7 @@ function mapHistoryToOpenAI(history: any[]): ChatCompletionMessageParam[] {
 
 export async function ghostChat(history: any[]): Promise<string> {
     if (!apiKey || !openai) {
-        const errorMessage = "AI service is not configured. Please set the OPENAI_API_KEY in your .env file.";
+        const errorMessage = "AI service is not configured. Please set the OPENROUTER_API_KEY in your .env file.";
         console.error('Ghost AI Error:', errorMessage);
         return `❌ ${errorMessage}`;
     }
@@ -31,13 +32,13 @@ export async function ghostChat(history: any[]): Promise<string> {
         const openAIHistory = mapHistoryToOpenAI(history);
 
         const completion = await openai.chat.completions.create({
-            model: 'gpt-3.5-turbo',
+            model: 'mistralai/mistral-7b-instruct:free',
             messages: openAIHistory,
         });
         
         return completion.choices[0].message.content || "👻 I’m GhostAI — but I couldn’t quite catch that.";
     } catch (err: any) {
-        console.error('Ghost AI Error (OpenAI):', err);
+        console.error('Ghost AI Error (OpenRouter):', err);
         return '❌ An error occurred while communicating with the AI. Please check the server console for details.';
     }
 }

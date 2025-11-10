@@ -3,19 +3,20 @@
 import OpenAI from 'openai';
 
 export async function testApiKeyAction(): Promise<string> {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY;
 
-    if (!apiKey || apiKey === 'YOUR_OPENAI_API_KEY' || apiKey.trim() === '') {
-        return 'Error: OPENAI_API_KEY is not set in your .env file.';
+    if (!apiKey || apiKey === 'YOUR_OPENROUTER_API_KEY' || apiKey.trim() === '') {
+        return 'Error: OPENROUTER_API_KEY is not set in your .env file.';
     }
 
     const openai = new OpenAI({
+        baseURL: 'https://openrouter.ai/api/v1',
         apiKey: apiKey,
     });
 
     try {
         const completion = await openai.chat.completions.create({
-            model: 'gpt-3.5-turbo',
+            model: 'mistralai/mistral-7b-instruct:free',
             messages: [{ role: 'user', content: 'Say "hello".' }],
             max_tokens: 5,
         });
