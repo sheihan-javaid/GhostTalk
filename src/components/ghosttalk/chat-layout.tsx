@@ -93,7 +93,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
             const publicKeyJwk = await crypto.exportMyPublicKey();
             
             if (publicKeyJwk) {
-                await updateDocumentNonBlocking(roomDocRef, {
+                await updateDoc(roomDocRef, {
                     [`participants.${user.uid}`]: {
                         publicKey: publicKeyJwk,
                         name: userName
