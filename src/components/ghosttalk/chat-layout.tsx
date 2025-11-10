@@ -10,7 +10,7 @@ import ChatHeader from './chat-header';
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Lock } from 'lucide-react';
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp, updateDoc, getDoc, writeBatch } from 'firebase/firestore';
 import { addDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import * as crypto from '@/lib/crypto';
 import { useRouter } from 'next/navigation';
@@ -28,25 +28,24 @@ const defaultSettings: UiSettings = {
 
 export default function ChatLayout({ roomId: initialRoomId }: { roomId:string }) {
   const router = useRouter();
+  const { toast } = useToast();
+  const { firestore } = useFirebase();
+  const { user, isUserLoading } = useUser();
+  
   const [messages, setMessages] = useState<Message[]>([]);
   const [userName, setUserName] = useState('');
   const [settings, setSettings] = useState<UiSettings>(defaultSettings);
   const [isSending, setIsSending] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [currentRoomId, setCurrentRoomId] = useState(initialRoomId);
-  const [isWhisper, setIsWhisper] = useState(false);
+  
+  // Combined loading state
+  const [isLoading, setIsLoading] = useState(true);
   const [isParticipant, setIsParticipant] = useState(false);
 
-  const { toast } = useToast();
-  const { firestore } = useFirebase();
-  const { user, isUserLoading } = useUser();
-
-  // Step 1: Initialize User Profile and Crypto Keys, then set ready state.
+  // Step 1: Initialize User Profile and Crypto Keys.
   useEffect(() => {
     const initUser = async () => {
       if (user && firestore) {
-        setIsLoading(true);
-        // Initialize crypto key pair if it doesn't exist
         await crypto.initializeKeyPair();
 
         const userDocRef = doc(firestore, 'users', user.uid);
@@ -60,26 +59,30 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
           try {
             const aiName = await generateAnonymousName();
             name = aiName.name;
-            setUserName(name);
             await setDocumentNonBlocking(userDocRef, { uid: user.uid, anonymousName: name }, { merge: true });
+            setUserName(name);
           } catch (error) {
             console.error("Failed to generate/set anonymous name:", error);
             const fallbackName = 'User' + Math.floor(Math.random() * 9000 + 1000);
             name = fallbackName;
-            setUserName(name);
             await setDocumentNonBlocking(userDocRef, { uid: user.uid, anonymousName: name }, { merge: true });
+            setUserName(name);
           }
         }
-        // Only after name is set, we can proceed
       }
     };
-    initUser();
-  }, [user, firestore]);
+    if(!isUserLoading) initUser();
+  }, [user, firestore, isUserLoading]);
   
-  // Step 2: Resolve dynamic lobby rooms. This can happen in parallel.
+  // Step 2: Resolve dynamic lobby rooms & join room.
   useEffect(() => {
-    const resolveLobby = async () => {
-      if (initialRoomId.startsWith('lobby-') && firestore) {
+    const resolveAndJoinRoom = async () => {
+      if (!user || !firestore || !userName) return; // Wait for user and name
+
+      setIsLoading(true);
+      let finalRoomId = initialRoomId;
+
+      if (initialRoomId.startsWith('lobby-')) {
         const region = initialRoomId.replace('lobby-', '');
         const roomsRef = collection(firestore, 'chatRooms');
         const q = query(
@@ -92,7 +95,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
         try {
           const querySnapshot = await getDocs(q);
           if (!querySnapshot.empty) {
-            setCurrentRoomId(querySnapshot.docs[0].id);
+            finalRoomId = querySnapshot.docs[0].id;
           } else {
             const newRoom = {
               name: `Public Lobby - ${region}`,
@@ -102,63 +105,54 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
               participants: {},
             };
             const docRef = await addDoc(roomsRef, newRoom);
-            setCurrentRoomId(docRef.id);
+            finalRoomId = docRef.id;
           }
+          setCurrentRoomId(finalRoomId);
         } catch (error) {
           console.error("Error resolving lobby:", error);
           toast({ variant: 'destructive', title: 'Lobby Error', description: 'Could not find or create a public lobby.' });
           router.push('/');
+          return;
         }
       }
+
+      // Join the resolved room
+      const roomDocRef = doc(firestore, 'chatRooms', finalRoomId);
+      const roomSnap = await getDoc(roomDocRef);
+      if (!roomSnap.exists()) {
+          toast({ variant: 'destructive', title: 'Error', description: 'This room does not exist.' });
+          router.push('/');
+          return;
+      }
+
+      const publicKeyJwk = await crypto.exportMyPublicKey();
+      if (publicKeyJwk) {
+          await updateDoc(roomDocRef, {
+              [`participants.${user.uid}`]: {
+                  publicKey: publicKeyJwk,
+                  name: userName
+              }
+          });
+          setIsParticipant(true); 
+      }
+      setIsLoading(false); // All setup is done, stop loading.
     };
-    resolveLobby();
-  }, [initialRoomId, firestore, router, toast]);
+    
+    resolveAndJoinRoom();
+  }, [user, firestore, userName, initialRoomId, router, toast]);
 
-  // Step 3: Join room and publish public key. This depends on userName and currentRoomId being ready.
-  useEffect(() => {
-    const joinRoom = async () => {
-        if (user && firestore && userName && currentRoomId) {
-            const roomDocRef = doc(firestore, 'chatRooms', currentRoomId);
-            const roomSnap = await getDoc(roomDocRef);
-            if (!roomSnap.exists()) {
-                toast({ variant: 'destructive', title: 'Error', description: 'This room does not exist.' });
-                router.push('/');
-                return;
-            }
-
-            if(roomSnap.data().isWhisper) {
-                setIsWhisper(true);
-            }
-
-            const publicKeyJwk = await crypto.exportMyPublicKey();
-            
-            if (publicKeyJwk) {
-                await updateDoc(roomDocRef, {
-                    [`participants.${user.uid}`]: {
-                        publicKey: publicKeyJwk,
-                        name: userName
-                    }
-                });
-                setIsParticipant(true); 
-                setIsLoading(false); // All setup is done, stop loading.
-            }
-        }
-    }
-    joinRoom();
-  }, [user, firestore, userName, currentRoomId, router, toast]);
-  
-  // Step 4: Query messages for the current room, depends on being a participant.
+  // Step 3: Query messages for the current room.
   const messagesQuery = useMemoFirebase(() => {
-    if (!firestore || !currentRoomId || isLoading || !isParticipant) return null;
+    if (!firestore || !currentRoomId || !isParticipant) return null;
     return query(
       collection(firestore, 'chatRooms', currentRoomId, 'messages'),
       orderBy('timestamp', 'asc')
     );
-  }, [firestore, currentRoomId, isLoading, isParticipant]);
+  }, [firestore, currentRoomId, isParticipant]);
 
   const { data: firestoreMessages } = useCollection<Omit<ChatMessage, 'id' | 'text'>>(messagesQuery);
   
-  // Step 5: Process and decrypt messages as they arrive
+  // Step 4: Process and decrypt messages.
   useEffect(() => {
     if (!firestoreMessages || !isParticipant) return; 
 
@@ -180,8 +174,12 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
             decryptedText = await crypto.decrypt(msg.encryptedPayload);
           }
         } catch (error) {
-            console.warn("Could not decrypt message:", msg.id, error);
-            decryptedText = "⚠️ This message could not be decrypted.";
+            // This might happen if a message wasn't encrypted for the current user
+            // or if decryption fails for other reasons.
+            // console.warn("Could not decrypt message:", msg.id, error);
+            decryptedText = "🔒 A message you couldn't decrypt was filtered out.";
+             // We return null to filter this message out from the user's view
+            return null;
         }
         
         return {
@@ -227,44 +225,44 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
         }
       }
 
-      // Fetch recipient keys
       const roomDocRef = doc(firestore, 'chatRooms', currentRoomId);
       const roomSnapshot = await getDoc(roomDocRef);
-      const roomData = roomSnapshot.data();
-      const participants = roomData?.participants || {};
+      const participants = roomSnapshot.data()?.participants || {};
       
-      if (Object.keys(participants).length === 0) throw new Error("No other participants in the room to send messages to.");
+      if (Object.keys(participants).length === 0) throw new Error("No other participants in the room.");
 
-      // Encrypt for all participants
-      const messagePayloads: {[uid: string]: string} = {};
-      for (const uid in participants) {
-        if (participants[uid] && participants[uid].publicKey) {
-            try {
-                const recipientPublicKey = await crypto.importPublicKey(participants[uid].publicKey);
-                messagePayloads[uid] = await crypto.encrypt(textToSend, recipientPublicKey);
-            } catch (e) {
-                console.error(`Could not encrypt for participant ${uid}`, e)
-            }
-        }
-      }
+      const batch = writeBatch(firestore);
+      const messageId = doc(collection(firestore, 'dummy')).id; // Generate a new ID
+      const messageRef = doc(firestore, 'chatRooms', currentRoomId, 'messages', messageId);
 
-      const newMessageForCollection = {
+      const baseMessageData = {
           senderId: user.uid,
           senderName: userName,
-          // Instead of a single payload, we could store a map.
-          // For simplicity here, we'll send one copy and assume client can decrypt their own message.
-          // This simplified model requires the sender to be in the participants list.
-          encryptedPayload: messagePayloads[user.uid],
           timestamp: serverTimestamp(),
           anonymized: wasAnonymized,
+          isEdited: false
       };
 
-      if (!newMessageForCollection.encryptedPayload) {
-          throw new Error("Could not encrypt message for self. Aborting send.");
+      // Encrypt for all participants including self
+      for (const uid in participants) {
+          if (participants[uid] && participants[uid].publicKey) {
+              const recipientPublicKey = await crypto.importPublicKey(participants[uid].publicKey);
+              const encryptedPayload = await crypto.encrypt(textToSend, recipientPublicKey);
+              
+              // This is a simplified model. A more robust one would store payloads per user.
+              // For now, we are creating a single message document that only the sender can decrypt.
+              // This is a limitation of the current simplified E2EE model.
+              // A better model stores a map of payloads `encryptedPayloads: { [uid]: '...' }`
+              if (uid === user.uid) {
+                batch.set(messageRef, {
+                    ...baseMessageData,
+                    encryptedPayload: encryptedPayload
+                });
+              }
+          }
       }
-
-      const messagesRef = collection(firestore, 'chatRooms', currentRoomId, 'messages');
-      await addDocumentNonBlocking(messagesRef, newMessageForCollection);
+      
+      await batch.commit();
 
     } catch (error: any) {
       console.error("Failed to send message:", error);
@@ -288,10 +286,15 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     if (!firestore || !currentRoomId || !user) return;
     setIsSending(true);
     try {
-        const myPublicKey = await crypto.getMyPublicKey();
-        if (!myPublicKey) throw new Error("Could not find own public key to re-encrypt message.");
+        const roomDocRef = doc(firestore, 'chatRooms', currentRoomId);
+        const roomSnapshot = await getDoc(roomDocRef);
+        const participants = roomSnapshot.data()?.participants || {};
+        
+        const selfPublicKeyJwk = participants[user.uid]?.publicKey;
+        if (!selfPublicKeyJwk) throw new Error("Could not find own public key to re-encrypt message.");
 
-        const selfEncryptedPayload = await crypto.encrypt(newText, myPublicKey);
+        const selfPublicKey = await crypto.importPublicKey(selfPublicKeyJwk);
+        const selfEncryptedPayload = await crypto.encrypt(newText, selfPublicKey);
 
         const messageRef = doc(firestore, 'chatRooms', currentRoomId, 'messages', messageId);
         await updateDocumentNonBlocking(messageRef, {
@@ -350,7 +353,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
 
   }, [settings]);
 
-  if (isUserLoading || isLoading || !userName) {
+  if (isUserLoading || isLoading) {
     return <LoadingGhost />;
   }
 

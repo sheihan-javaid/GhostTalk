@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Copy, Check, Link as LinkIcon, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import Link from 'next/link';
 import * as crypto from '@/lib/crypto';
 
 
@@ -37,16 +36,13 @@ export default function WhisperPage() {
     };
 
     try {
-      // 1. Create the room document
       const docRef = await addDocumentNonBlocking(collection(firestore, 'chatRooms'), newRoomData);
       if (docRef) {
-        // 2. Add self as a participant
         const publicKeyJwk = await crypto.exportMyPublicKey();
         const userDoc = await getDoc(doc(firestore, 'users', user.uid));
         const userName = userDoc.data()?.anonymousName || 'Anonymous';
 
         if (publicKeyJwk) {
-          // This update is non-blocking in terms of UI, but we await it here to ensure the creator is in before generating the link.
           await updateDoc(docRef, {
             [`participants.${user.uid}`]: {
               publicKey: publicKeyJwk,
@@ -58,7 +54,6 @@ export default function WhisperPage() {
         const generatedLink = `${window.location.origin}/chat/${docRef.id}`;
         setWhisperLink(generatedLink);
         setIsRedirecting(true);
-        // Automatically navigate to the chat room
         router.push(`/chat/${docRef.id}`);
       }
     } catch (error) {
@@ -93,7 +88,7 @@ export default function WhisperPage() {
         return (
             <div className="text-center space-y-2">
                 <Loader2 className="animate-spin mx-auto text-accent"/>
-                <p className="text-sm text-muted-foreground">You are being redirected to your secure room...</p>
+                <p className="text-sm text-muted-foreground">Redirecting to your secure room...</p>
             </div>
         );
     }
@@ -119,22 +114,19 @@ export default function WhisperPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-       <Link href="/" className="absolute top-4 left-4 text-sm text-muted-foreground hover:text-accent">&larr; Back to Home</Link>
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <LinkIcon className="h-6 w-6 text-accent" />
-            Whisper Mode
-          </CardTitle>
-          <CardDescription>
-            Create a temporary, end-to-end encrypted 1-on-1 chat room. The room is deleted when the last person leaves.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-            {renderContent()}
-        </CardContent>
-      </Card>
-    </div>
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <LinkIcon className="h-6 w-6 text-accent" />
+          Whisper Mode
+        </CardTitle>
+        <CardDescription>
+          Create a temporary, end-to-end encrypted 1-on-1 chat room. The room is deleted when the last person leaves.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+          {renderContent()}
+      </CardContent>
+    </Card>
   );
 }
