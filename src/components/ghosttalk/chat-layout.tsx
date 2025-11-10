@@ -138,7 +138,9 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
       setIsLoading(false); // All setup is done, stop loading.
     };
     
-    resolveAndJoinRoom();
+    if (userName) {
+      resolveAndJoinRoom();
+    }
   }, [user, firestore, userName, initialRoomId, router, toast]);
 
   // Step 3: Query messages for the current room.
@@ -161,35 +163,32 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
       const expirySeconds = settings.messageExpiry;
 
       const messagePromises = firestoreMessages.map(async (msg): Promise<Message | null> => {
-        if (expirySeconds > 0 && msg.timestamp instanceof Timestamp) {
-            const messageTime = msg.timestamp.toMillis();
+        // Here msg is correctly typed from useCollection's generic
+        const concreteMsg = msg as ChatMessage & {id: string};
+
+        if (expirySeconds > 0 && concreteMsg.timestamp instanceof Timestamp) {
+            const messageTime = concreteMsg.timestamp.toMillis();
             if (now - messageTime > expirySeconds * 1000) return null;
         }
 
         let decryptedText = '';
         try {
-          // @ts-ignore
-          if (msg.encryptedPayload) {
-            // @ts-ignore
-            decryptedText = await crypto.decrypt(msg.encryptedPayload);
+          if (concreteMsg.encryptedPayload) {
+            decryptedText = await crypto.decrypt(concreteMsg.encryptedPayload);
           }
         } catch (error) {
-            // This might happen if a message wasn't encrypted for the current user
-            // or if decryption fails for other reasons.
-            // console.warn("Could not decrypt message:", msg.id, error);
             decryptedText = "🔒 A message you couldn't decrypt was filtered out.";
-             // We return null to filter this message out from the user's view
             return null;
         }
         
         return {
-          id: msg.id,
+          id: concreteMsg.id,
           text: decryptedText,
-          userId: msg.senderId,
-          username: msg.senderName,
-          timestamp: msg.timestamp,
-          anonymized: !!msg.anonymized,
-          isEdited: !!msg.isEdited,
+          userId: concreteMsg.senderId,
+          username: concreteMsg.senderName,
+          timestamp: concreteMsg.timestamp,
+          anonymized: !!concreteMsg.anonymized,
+          isEdited: !!concreteMsg.isEdited,
         };
       });
 
