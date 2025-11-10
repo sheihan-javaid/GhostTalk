@@ -8,12 +8,13 @@ import MessageList from './message-list';
 import MessageInput from './message-input';
 import ChatHeader from './chat-header';
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2, Lock } from 'lucide-react';
+import { Sparkles, Lock } from 'lucide-react';
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp, updateDoc, getDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import * as crypto from '@/lib/crypto';
 import { useRouter } from 'next/navigation';
+import LoadingGhost from './loading-ghost';
 
 
 const defaultSettings: UiSettings = {
@@ -351,12 +352,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
   }, [settings]);
 
   if (isUserLoading || isRoomLoading || !userName || !isParticipant) {
-    return (
-        <div className="flex flex-col h-screen bg-background items-center justify-center text-foreground">
-            <Loader2 className="h-12 w-12 animate-spin text-accent" />
-            <p className="mt-4 text-lg">{!isParticipant ? 'Performing secure handshake...' : 'Initializing your session...'}</p>
-        </div>
-    )
+    return <LoadingGhost />;
   }
 
   return (

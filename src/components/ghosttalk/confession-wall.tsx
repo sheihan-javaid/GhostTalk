@@ -13,6 +13,7 @@ import { moderateConfession } from '@/ai/flows/moderate-confession';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import LoadingGhost from './loading-ghost';
 
 interface Confession {
   id: string;
@@ -119,6 +120,10 @@ export default function ConfessionWall() {
     setLikedConfessions([...likedConfessions, confessionId]);
   };
 
+  if (isLoading) {
+      return <LoadingGhost />;
+  }
+
   return (
     <div className="flex flex-col items-center min-h-screen bg-background p-4 md:p-8">
         <Link href="/" className="absolute top-4 left-4 text-sm text-muted-foreground hover:text-accent">&larr; Back to Home</Link>
@@ -162,7 +167,6 @@ export default function ConfessionWall() {
         </Card>
 
         <div className="space-y-4">
-          {isLoading && <div className="text-center"><Loader2 className="animate-spin mx-auto"/></div>}
           {confessions?.map(confession => (
             <Card key={confession.id}>
               <CardContent className="p-4">

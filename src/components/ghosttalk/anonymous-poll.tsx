@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, X } from 'lucide-react';
 import Link from 'next/link';
+import LoadingGhost from './loading-ghost';
 
 interface Poll {
   id: string;
@@ -97,6 +98,10 @@ export default function AnonymousPoll() {
     return Object.values(votes).reduce((sum, count) => sum + count, 0);
   }
 
+  if (isLoading) {
+    return <LoadingGhost />;
+  }
+
   return (
     <div className="flex flex-col items-center min-h-screen bg-background p-4 md:p-8">
        <Link href="/" className="absolute top-4 left-4 text-sm text-muted-foreground hover:text-accent">&larr; Back to Home</Link>
@@ -140,7 +145,6 @@ export default function AnonymousPoll() {
 
         <div className="space-y-4">
             <h2 className="text-2xl font-bold text-center">Live Polls</h2>
-            {isLoading && <div className="text-center"><Loader2 className="animate-spin mx-auto"/></div>}
             {polls?.map(poll => {
                 const totalVotes = getTotalVotes(poll.votes);
                 return (
