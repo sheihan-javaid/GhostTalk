@@ -22,15 +22,8 @@ function mapHistoryToOpenAI(history: any[]): ChatCompletionMessageParam[] {
 }
 
 export async function ghostChat(history: any[]): Promise<string> {
-    if (!apiKey) {
+    if (!apiKey || !openai) {
         const errorMessage = "AI service is not configured. Please set the OPENROUTER_API_KEY in your .env file.";
-        console.error('Ghost AI Error:', errorMessage);
-        return `❌ ${errorMessage}`;
-    }
-
-    if (!openai) {
-        // This case should ideally not be hit if apiKey is present, but it's good practice
-        const errorMessage = "AI client failed to initialize.";
         console.error('Ghost AI Error:', errorMessage);
         return `❌ ${errorMessage}`;
     }
