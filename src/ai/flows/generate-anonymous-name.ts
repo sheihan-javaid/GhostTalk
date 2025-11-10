@@ -3,14 +3,13 @@
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export async function generateAnonymousName(): Promise<{ name: string }> {
     try {
         const completion = await openai.chat.completions.create({
-            model: 'openrouter/cinematika-7b:free',
+            model: 'gpt-3.5-turbo',
             messages: [{ role: 'user', content: `Generate one creative, anonymous username. The username should be dark, brutal, or have adult humor themes.
 Return only the username, with no explanation or extra text.
 Example: VoidGazer` }],
@@ -21,7 +20,7 @@ Example: VoidGazer` }],
         const name = completion.choices[0].message.content?.trim().replace(/"/g, '') || 'Anonymous';
         return { name };
     } catch (error) {
-        console.error('Failed to generate anonymous name with OpenRouter:', error);
+        console.error('Failed to generate anonymous name with OpenAI:', error);
         return { name: 'Anonymous' + Math.floor(Math.random() * 1000) };
     }
 }

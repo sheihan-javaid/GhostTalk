@@ -13,14 +13,13 @@ const AnonymizeMessageOutputSchema = z.object({
 });
 
 const openai = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export async function anonymizeMessage(input: z.infer<typeof AnonymizeMessageInputSchema>): Promise<z.infer<typeof AnonymizeMessageOutputSchema>> {
   try {
     const completion = await openai.chat.completions.create({
-      model: 'openrouter/cinematika-7b:free', 
+      model: 'gpt-3.5-turbo', 
       messages: [
         {
           role: 'system',
@@ -43,7 +42,7 @@ Do not add any extra text or explanation, just the anonymized message.`
       anonymized: anonymizedMessage.trim() !== input.message.trim(),
     };
   } catch (error) {
-    console.error('Failed to anonymize message with OpenRouter:', error);
+    console.error('Failed to anonymize message with OpenAI:', error);
     // On failure, return original message to not block user
     return {
       anonymizedMessage: input.message,

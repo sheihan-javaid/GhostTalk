@@ -3,8 +3,7 @@
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export async function moderateConfession(text: string): Promise<{ isAppropriate: boolean; reason?: string; }> {
@@ -14,7 +13,7 @@ export async function moderateConfession(text: string): Promise<{ isAppropriate:
     }
 
     const completion = await openai.chat.completions.create({
-        model: 'openrouter/cinematika-7b:free', 
+        model: 'gpt-3.5-turbo', 
         messages: [
             {
                 role: 'system',
@@ -44,7 +43,7 @@ Respond with a JSON object with two keys: "isAppropriate" (boolean) and "reason"
       reason: parsedResponse.reason,
     };
   } catch (error) {
-    console.error('Failed to moderate confession with OpenRouter:', error);
+    console.error('Failed to moderate confession with OpenAI:', error);
     // Fail closed: if moderation fails, assume it's not appropriate
     return {
       isAppropriate: false,
