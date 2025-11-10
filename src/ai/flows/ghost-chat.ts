@@ -3,10 +3,12 @@
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 
-const openai = new OpenAI({
+const apiKey = process.env.OPENROUTER_API_KEY;
+
+const openai = apiKey ? new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
+  apiKey: apiKey,
+}) : null;
 
 // The message format for the OpenAI library is different from Genkit's MessageData
 // This function maps from one to the other.
@@ -20,6 +22,12 @@ function mapHistoryToOpenAI(history: any[]): ChatCompletionMessageParam[] {
 }
 
 export async function ghostChat(history: any[]): Promise<string> {
+    if (!openai) {
+        const errorMessage = "AI service is not configured. Please set the OPENROUTER_API_KEY in your .env file.";
+        console.error('Ghost AI Error:', errorMessage);
+        return `❌ ${errorMessage}`;
+    }
+
     try {
         const openAIHistory = mapHistoryToOpenAI(history);
 
@@ -31,10 +39,13 @@ export async function ghostChat(history: any[]): Promise<string> {
         return completion.choices[0].message.content || "👻 I’m GhostAI — but I couldn’t quite catch that.";
     } catch (err: any) {
         console.error('Ghost AI Error (OpenRouter):', err);
-        return '❌ An error occurred. Please check the server console for details.';
+        return '❌ An error occurred while communicating with the AI. Please check the server console for details.';
     }
 }
 
 export async function getGhostAIGreeting(): Promise<string> {
+  if (!openai) {
+      return "Hello! 👋 I’m GhostAI. My AI capabilities are currently offline as I'm missing an API key, but I'm here to chat. What's on your mind?";
+  }
   return "Hello! 👋 I’m GhostAI, your whisper in the digital void. I'm here to help you with questions, creative projects, coding, analysis, and much more without leaving any traces. What can I help you with today?";
 }
