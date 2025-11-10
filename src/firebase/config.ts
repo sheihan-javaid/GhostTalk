@@ -1,3 +1,4 @@
+'use client';
 export const firebaseConfig = {
   "projectId": "ghost-talk-app",
   "appId": "1:770487192837:web:e3bf49d8c8231502476b38",
