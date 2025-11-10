@@ -21,14 +21,14 @@ service cloud.firestore {
       allow create: if request.auth != null;
 
       // Allow authenticated users to add/update their own entry in the participants map
+      // This is how users join or leave a room.
       allow update: if request.auth != null &&
                       request.resource.data.diff(resource.data).affectedKeys()
                         .hasOnly(['participants', 'participants.' + request.auth.uid]);
 
-      // Allow a participant to delete a whisper room they are in.
-      allow delete: if request.auth != null 
-                      && resource.data.name.matches("Whisper Room.*")
-                      && resource.data.participants[request.auth.uid] != null;
+      // Deletion is handled by the onParticipantLeave Cloud Function when a room is empty.
+      // Client-side deletion is disallowed to prevent a participant from deleting a room with others in it.
+      allow delete: if false;
 
       // ===== Messages Subcollection =====
       match /messages/{messageId} {
