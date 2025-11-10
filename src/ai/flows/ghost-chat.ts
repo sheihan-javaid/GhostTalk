@@ -39,7 +39,7 @@ export async function ghostChat(history: any[]): Promise<string> {
         return completion.choices[0].message.content || "👻 I’m GhostAI — but I couldn’t quite catch that.";
     } catch (err: any) {
         console.error('Ghost AI Error (OpenRouter):', err);
-        return '❌ An error occurred while communicating with the AI. Please check the server console for details.';
+        return `❌ An error occurred while communicating with the AI. The service may be temporarily unavailable. (Details: ${err.message || 'Unknown error'})`;
     }
 }
 
