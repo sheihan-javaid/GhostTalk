@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Ghost, Users, ArrowRight, Link as LinkIcon, Coffee, Globe, Zap, MessageSquareQuote, BarChart, Bot } from 'lucide-react';
+import { Ghost, Users, ArrowRight, Link as LinkIcon, Coffee, Globe, Zap, MessageSquareQuote, BarChart, Bot, TestTube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -25,7 +25,7 @@ const regions = [
   { value: 'oceania', label: 'Oceania' },
 ];
 
-const qrCodeDataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAABlBMVEX///8AAABVwtN+AAABnElEQVR4nO3dy27DIBAEUGsH2f//2fUPgw1pQaK1Qztoey7F4AwbDCjY3N3d3d3d3d3d3d3d3d19b/lu41/O/mP8y/iX8b9L/O99Lv/z785/ufw38r+T/L/4N/i/9T/B/0/+H/3/9T/g/zX+39Z/F/9L/C/xv87/V/1H/C/z/4v/S/x/9t/k/239b/B/yf9r/I/y/83/D/7f+z/h/zX+H/s/7f9T/t/4P+3/s/5P+X/j/4f/f/0/5P+R/s/4f+L/h/6v+L/q/6f+v/p/7P+H/u/6f+7/p/8v+n/y/6f/L/p/8v+X/y/5f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1//L6/f9n/A97f6X+H/s/4X+H/q/4f+r/p/6/+n/s/4f+7/p/7v+n/y/6f/L/p/8v+n/y/5f/L/l/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1//L4/f9n/A97f6X+H/s/4X+H/q/4f+r/p/6/+n/s/4f+7/p/7v+n/y/6f/L/p/8v+n/y/5f/L/l/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/+v0+v/e/u7u7u7u7u7u7u7u7u7vb/AFLW3Nf4b23dAAAAAElFTkSuQmCC";
+const qrCodeDataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAABlBMVEX///8AAABVwtN+AAABnElEQVR4nO3dy27DIBAEUGsH2f//2fUPgw1pQaK1Qztoey7F4AwbDCjY3N3d3d3d3d3d3d3d3d19b/lu41/O/mP8y/iX8b9L/O99Lv/z785/ufw38r+T/L/4N/i/9T/B/0/+H/3/9T/g/zX+39Z/F/9L/C/xv87/V/1H/C/z/4v/S/x/9t/k/239b/B/yf9r/I/y/83/D/7f+z/h/zX+H/s/7f9T/t/4P+3/s/5P+X/j/4f/f/0/5P+R/s/4f+L/h/6v+L/q/6f+v/p/7P+H/u/6f+7/p/8v+n/y/6f/L/p/8v+X/y/5f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1//L6/f9n/A97f6X+H/s/4X+H/q/4f+r/p/6/+n/s/4f+7/p/7v+n/y/6f/L/p/8v+n/y/5f/L/l/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1//L4/f9n/A97f6X+H/s/4X+H/q/4f+r/p/6/+n/s/4f+7/p/7v+n/y/6f/L/p/8v+n/y/5f/L/l/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1//L6/f9n/A97f6X+H/s/4X+H/q/4f+r/p/6/+n/s/4f+7/p/7v+n/y/6f/L/p/8v+n/y/5f/L/l/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/L/1/8v/X/y/9f/b/1/9v/X/2/9f/b/1/9v/X/2/9f/L/1/+v0+v/e/u7u7u7u7u7u7u7u7u7vb/AFLW3Nf4b23dAAAAAElFTkSuQmCC";
 
 export default function Home() {
   const router = useRouter();
@@ -242,6 +242,11 @@ export default function Home() {
                 <Bot className="h-6 w-6"/>
                 <span className="font-semibold">Ghost AI</span>
                 <p className="text-xs font-normal text-muted-foreground">Privacy-first chatbot</p>
+              </Button>
+              <Button variant="outline" className="h-24 flex-col gap-2 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => handleLoungeFeatureClick('test-api')}>
+                <TestTube className="h-6 w-6"/>
+                <span className="font-semibold">API Key Tester</span>
+                <p className="text-xs font-normal text-muted-foreground">Debug AI connectivity</p>
               </Button>
             </div>
           </DialogContent>
