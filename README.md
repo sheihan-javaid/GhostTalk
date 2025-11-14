@@ -156,6 +156,8 @@ The home page is the main entry point. It handles:
 -   **Ghost Lounge**: A dialog that provides access to the experimental features (Whisper, Confession, Poll, AI).
 -   **UI**: Built with ShadCN `Card` and `Dialog` components to create an interactive dashboard.
 
+![Home Page](https://picsum.photos/seed/homepage/800/500)
+
 *Copy the contents of `src/app/page.tsx`.*
 
 ---
@@ -163,6 +165,8 @@ The home page is the main entry point. It handles:
 ## Part 7: Building the Real-time Chat
 
 This is the most complex part of the application.
+
+![Chat Interface](https://picsum.photos/seed/chat/800/600)
 
 ### 7.1. Chat Components
 
@@ -203,6 +207,8 @@ These are standalone features accessible from the home page.
     3.  Generates a unique invite link (`/chat/<roomId>`).
     4.  Automatically redirects the user to the new room.
 
+![Whisper Mode](https://picsum.photos/seed/whisper/800/400)
+
 ### 8.2. Confession Wall (`src/app/lounge/confession/page.tsx`)
 
 -   **Functionality**: An anonymous public board where users can post text and images.
@@ -212,6 +218,8 @@ These are standalone features accessible from the home page.
     3.  If the content is appropriate, it creates a new document in the `confessions` collection with the text, timestamp, and optional media (as a Base64 data URL).
     4.  Allows users to "like" confessions, which increments a `likes` counter on the document.
 
+![Confession Wall](https://picsum.photos/seed/confession/800/500)
+
 ### 8.3. Anonymous Poll (`src/app/lounge/poll/page.tsx`)
 
 -   **Functionality**: Allows users to create and vote on anonymous polls.
@@ -220,6 +228,8 @@ These are standalone features accessible from the home page.
     2.  Form for creating a new poll (question + options). A new document is added to the `polls` collection.
     3.  When a user votes, it increments the count for the chosen option in the `votes` map of the poll document.
 
+![Anonymous Poll](https://picsum.photos/seed/poll/800/500)
+
 ### 8.4. Ghost AI Chat (`src/app/lounge/ghost-ai/page.tsx`)
 
 -   **Functionality**: A private chatbot interface.
@@ -227,6 +237,8 @@ These are standalone features accessible from the home page.
     1.  Maintains a `history` of the conversation in its local state.
     2.  When the user sends a message, it calls the `ghostChat` server flow with the entire history.
     3.  The AI's response is added to the history, and the UI re-renders.
+
+![Ghost AI](https://picsum.photos/seed/ghostai/800/600)
 
 ---
 
