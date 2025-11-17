@@ -166,21 +166,29 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
 
   const { data: firestoreMessages } = useCollection<Omit<ChatMessage, 'id' | 'text'>>(messagesQuery);
   
-  // Step 4: Process and decrypt messages.
+  // Step 4: Process and decrypt messages, and handle automatic deletion.
   useEffect(() => {
-    if (!firestoreMessages || !isParticipant || !user) return; 
+    if (!firestoreMessages || !isParticipant || !user || !firestore || !currentRoomId) return; 
 
     const processMessages = async () => {
       const now = Date.now();
       const expirySeconds = settings.messageExpiry;
 
       const messagePromises = firestoreMessages.map(async (msg): Promise<Message | null> => {
-        // Here msg is correctly typed from useCollection's generic
         const concreteMsg = msg as ChatMessage & {id: string};
 
         if (expirySeconds > 0 && concreteMsg.timestamp instanceof Timestamp) {
             const messageTime = concreteMsg.timestamp.toMillis();
-            if (now - messageTime > expirySeconds * 1000) return null;
+            if (now - messageTime > expirySeconds * 1000) {
+              // Check if the current user is the sender
+              if (concreteMsg.senderId === user.uid) {
+                // If so, delete the message from Firestore
+                const messageRef = doc(firestore, 'chatRooms', currentRoomId, 'messages', concreteMsg.id);
+                deleteDocumentNonBlocking(messageRef);
+              }
+              // In either case, don't display it if it's expired
+              return null;
+            }
         }
 
         let decryptedPayload: MessagePayload;
@@ -190,8 +198,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
             const decryptedString = await crypto.decrypt(userPayload);
             decryptedPayload = JSON.parse(decryptedString);
           } else {
-            // This is expected in large public rooms where you aren't a recipient
-            return null;
+            return null; // Not intended for this user
           }
         } catch (error) {
             console.warn("Could not decrypt or parse message payload:", error, "Message ID:", concreteMsg.id);
@@ -217,7 +224,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     };
 
     processMessages();
-  }, [firestoreMessages, settings.messageExpiry, isParticipant, user]);
+  }, [firestoreMessages, settings.messageExpiry, isParticipant, user, firestore, currentRoomId]);
 
 
   const handleSendMessage = useCallback(async (rawText: string, shouldAnonymize: boolean, mediaFile?: File) => {
@@ -413,8 +420,3 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     </div>
   );
 }
-
-
-
-
-    

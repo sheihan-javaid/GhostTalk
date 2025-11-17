@@ -41,7 +41,7 @@ export default function PrivacySettings({ isOpen, onOpenChange, onSettingsChange
             <div className="space-y-3">
                 <Label className="font-semibold">Automatic Message Deletion</Label>
                 <p className="text-sm text-muted-foreground">
-                Messages older than this duration will be automatically deleted from your view. All messages are permanently deleted from servers after 15 days.
+                Your own messages older than this duration will be automatically and permanently deleted from the server. This cannot be undone.
                 </p>
                 <RadioGroup
                 value={String(currentSettings.messageExpiry)}
