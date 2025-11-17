@@ -19,7 +19,7 @@ import LoadingGhost from './loading-ghost';
 
 
 const defaultSettings: UiSettings = {
-  messageExpiry: 0,
+  messageExpiry: 1296000, // Default to 15 days
   themeColor: 'default',
   fontSize: 'medium',
   bubbleStyle: 'rounded',
