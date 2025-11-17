@@ -29,31 +29,33 @@ export default function WhisperPage() {
     setIsCreating(true);
 
     try {
-        const [docRef, aiName, publicKeyJwk] = await Promise.all([
-            addDocumentNonBlocking(collection(firestore, 'chatRooms'), {
+        const [aiName, publicKeyJwk] = await Promise.all([
+            generateAnonymousName(),
+            crypto.exportMyPublicKey()
+        ]);
+        
+        if (aiName && publicKeyJwk) {
+            const newRoom = {
                 name: `Whisper Room - ${Date.now()}`,
                 createdAt: serverTimestamp(),
                 region: 'global',
                 isPublic: false,
                 isWhisper: true,
-                participants: {},
-            }),
-            generateAnonymousName(),
-            crypto.exportMyPublicKey()
-        ]);
-        
-        if (docRef && aiName && publicKeyJwk) {
-            updateDocumentNonBlocking(docRef, {
-                [`participants.${user.uid}`]: {
-                publicKey: publicKeyJwk,
-                name: aiName.name || 'Anonymous',
+                participants: {
+                    [user.uid]: {
+                        publicKey: publicKeyJwk,
+                        name: aiName.name || 'Anonymous',
+                    }
                 },
-            });
+            };
             
+            const docRef = await addDocumentNonBlocking(collection(firestore, 'chatRooms'), newRoom);
+
             const generatedLink = `${window.location.origin}/chat/${docRef.id}`;
             setWhisperLink(generatedLink);
             setIsRedirecting(true);
             router.push(`/chat/${docRef.id}`);
+
         } else {
              throw new Error("Failed to gather all required resources to create the room.");
         }
@@ -131,7 +133,3 @@ export default function WhisperPage() {
     </Card>
   );
 }
-
-    
-
-    
