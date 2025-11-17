@@ -68,7 +68,7 @@
         },
         "participants": {
             "type": "object",
-            "description": "A map of user UIDs to their public key and anonymous name."
+            "description": "A map of user UIDs to their public key, anonymous name, and join timestamp."
         }
       },
       "required": ["name", "createdAt", "region", "isPublic"]

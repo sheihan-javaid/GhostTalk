@@ -26,6 +26,8 @@ const defaultSettings: UiSettings = {
   animationIntensity: 'medium',
 };
 
+const RECIPIENT_CAP = 50; // Cap recipients to 50 for performance
+
 // Helper to convert a File to a Data URL
 const fileToDataUrl = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -47,6 +49,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
   const [settings, setSettings] = useState<UiSettings>(defaultSettings);
   const [isSending, setIsSending] = useState(false);
   const [currentRoomId, setCurrentRoomId] = useState(initialRoomId);
+  const [isPublicRoom, setIsPublicRoom] = useState(false);
   
   // Combined loading state
   const [isLoading, setIsLoading] = useState(true);
@@ -80,8 +83,10 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
 
       setIsLoading(true);
       let finalRoomId = initialRoomId;
+      let isPublic = false;
 
       if (initialRoomId.startsWith('lobby-')) {
+        isPublic = true;
         const region = initialRoomId.replace('lobby-', '');
         const roomsRef = collection(firestore, 'chatRooms');
         const q = query(
@@ -107,6 +112,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
             finalRoomId = docRef.id;
           }
           setCurrentRoomId(finalRoomId);
+          setIsPublicRoom(true);
         } catch (error) {
           console.error("Error resolving lobby:", error);
           toast({ variant: 'destructive', title: 'Lobby Error', description: 'Could not find or create a public lobby.' });
@@ -124,12 +130,18 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
           return;
       }
 
+      // If it's a private room, check the isPublic flag from the document
+      if (!isPublic) {
+          setIsPublicRoom(roomSnap.data()?.isPublic || false);
+      }
+
       const publicKeyJwk = await crypto.exportMyPublicKey();
       if (publicKeyJwk) {
           await updateDocumentNonBlocking(roomDocRef, {
               [`participants.${user.uid}`]: {
                   publicKey: publicKeyJwk,
-                  name: userName
+                  name: userName,
+                  joinedAt: serverTimestamp(), // Add timestamp for sorting
               }
           });
           setIsParticipant(true); 
@@ -177,6 +189,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
             const decryptedString = await crypto.decrypt(userPayload);
             decryptedPayload = JSON.parse(decryptedString);
           } else {
+            // This is expected in large public rooms where you aren't a recipient
             return null;
           }
         } catch (error) {
@@ -234,20 +247,35 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
 
       const roomDocRef = doc(firestore, 'chatRooms', currentRoomId);
       const roomSnapshot = await getDoc(roomDocRef);
-      const participants = roomSnapshot.data()?.participants || {};
+      const allParticipants = roomSnapshot.data()?.participants || {};
       
-      if (Object.keys(participants).length === 0) {
+      if (Object.keys(allParticipants).length === 0) {
           throw new Error("There are no participants in the room to send the message to.");
       }
+      
+      // Performance optimization: Cap the number of recipients
+      const recentParticipants = Object.entries(allParticipants)
+        .sort(([, a]: any, [, b]: any) => (b.joinedAt?.toMillis() || 0) - (a.joinedAt?.toMillis() || 0))
+        .slice(0, RECIPIENT_CAP)
+        .reduce((acc, [uid, data]) => ({ ...acc, [uid]: data }), {});
+        
 
       const encryptedPayloads: { [key: string]: string } = {};
       
-      for (const uid in participants) {
-        const participant = participants[uid];
+      for (const uid in recentParticipants) {
+        const participant = recentParticipants[uid];
         if (participant && participant.publicKey) {
-          const recipientPublicKey = await crypto.importPublicKey(participant.publicKey);
-          encryptedPayloads[uid] = await crypto.encrypt(payloadString, recipientPublicKey);
+          try {
+            const recipientPublicKey = await crypto.importPublicKey(participant.publicKey);
+            encryptedPayloads[uid] = await crypto.encrypt(payloadString, recipientPublicKey);
+          } catch(e) {
+            console.warn(`Could not encrypt for participant ${uid}, skipping.`, e)
+          }
         }
+      }
+
+      if (Object.keys(encryptedPayloads).length === 0) {
+        throw new Error("Could not encrypt message for any recipients.");
       }
       
       const newMessage: Omit<ChatMessage, 'id'> = {
@@ -289,18 +317,22 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
         
         const newPayloads: { [key: string]: string } = {};
         
-        // Editing only changes the text, so media is undefined in this new payload.
+        // Re-encrypt for the same (potentially capped) set of users
+        const messageRef = doc(firestore, 'chatRooms', currentRoomId, 'messages', messageId);
+        const messageSnap = await getDoc(messageRef);
+        const originalPayloads = messageSnap.data()?.payloads || {};
+        const recipients = Object.keys(originalPayloads);
+
         const payload: MessagePayload = { text: newText };
         const payloadString = JSON.stringify(payload);
 
-        for (const uid in participants) {
+        for (const uid of recipients) {
             if (participants[uid] && participants[uid].publicKey) {
                 const recipientPublicKey = await crypto.importPublicKey(participants[uid].publicKey);
                 newPayloads[uid] = await crypto.encrypt(payloadString, recipientPublicKey);
             }
         }
 
-        const messageRef = doc(firestore, 'chatRooms', currentRoomId, 'messages', messageId);
         await updateDocumentNonBlocking(messageRef, {
             payloads: newPayloads,
             isEdited: true
@@ -363,7 +395,12 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
 
   return (
     <div className={`flex flex-col h-screen bg-background animate-intensity-${settings.animationIntensity}`}>
-      <ChatHeader roomId={currentRoomId} onSettingsChange={handleSettingsChange} settings={settings} />
+      <ChatHeader 
+        roomId={currentRoomId} 
+        isPublic={isPublicRoom} 
+        onSettingsChange={handleSettingsChange} 
+        settings={settings} 
+      />
       <div className="flex-1 overflow-hidden">
         <div className="p-2 text-center text-xs text-muted-foreground flex items-center justify-center gap-2 bg-secondary/30">
             <Lock className="h-3 w-3 text-green-500" />
@@ -382,3 +419,4 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     </div>
   );
 }
+

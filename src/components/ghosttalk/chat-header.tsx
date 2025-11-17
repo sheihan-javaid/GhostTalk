@@ -1,6 +1,7 @@
+
 'use client';
 
-import { Ghost, Settings, Copy, Check, Palette, Shield } from 'lucide-react';
+import { Ghost, Settings, Copy, Check, Palette, Shield, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -13,14 +14,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { UiSettings } from '@/lib/types';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 
 interface ChatHeaderProps {
   roomId: string;
+  isPublic: boolean;
   onSettingsChange: (settings: Partial<UiSettings>) => void;
   settings: UiSettings;
 }
 
-export default function ChatHeader({ roomId, onSettingsChange, settings }: ChatHeaderProps) {
+export default function ChatHeader({ roomId, isPublic, onSettingsChange, settings }: ChatHeaderProps) {
   const [inviteLink, setInviteLink] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   const [isAppearanceSettingsOpen, setIsAppearanceSettingsOpen] = useState(false);
@@ -44,7 +53,24 @@ export default function ChatHeader({ roomId, onSettingsChange, settings }: ChatH
         <h1 className="text-2xl font-bold text-foreground hidden sm:block font-headline">GhostTalk</h1>
       </Link>
       <div className="flex items-center gap-2 sm:gap-4">
-        {roomId !== 'random-lobby' && !roomId.startsWith('lobby-') && (
+        
+        {isPublic && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                  <Info className="h-4 w-4" />
+                  <span>Public Lobby</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-xs">This is a public lobby. In very large rooms, not all participants may receive every message to ensure performance.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
+        {!isPublic && (
           <div className="flex items-center gap-2 p-2 rounded-md bg-secondary">
             <span className="text-sm text-muted-foreground hidden md:inline">Invite:</span>
             <input type="text" readOnly value={inviteLink} className="text-sm bg-transparent w-32 md:w-48 text-foreground truncate" />
@@ -92,3 +118,4 @@ export default function ChatHeader({ roomId, onSettingsChange, settings }: ChatH
     </header>
   );
 }
+
