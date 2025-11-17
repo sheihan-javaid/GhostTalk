@@ -96,9 +96,21 @@ Create the following directory structure inside the `src/` folder:
 
 In the Firebase Console, navigate to the "Build" section:
 1.  **Authentication**: Click "Get started" and enable the **Anonymous** sign-in provider.
-2.  **Firestore Database**: Click "Create database." **CRITICAL:** You must create the database in **Native Mode**. Do NOT select Datastore mode, as features like TTL (Time-to-Live) are only available in Native Mode. Start in **production mode** and choose a location.
+2.  **Firestore Database**: Click "Create database."
 
-> **⚠️ Important Warning:** If you have already created a database in "Datastore Mode", you **cannot** switch it. You must create a new project or a new database instance in the correct "Native Mode". Doing so means your app will connect to a new, empty database, and **all data from your old database will not be carried over.** This is a necessary one-time step to ensure all app features work correctly.
+> **CRITICAL:** You must create the database in **Native Mode**. Do NOT select Datastore mode, as features like TTL (Time-to-Live) are only available in Native Mode. Start in **production mode** and choose a location.
+
+> **⚠️ Important Warning on Datastore Mode:** If you have already created a database in "Datastore Mode" (e.g., you don't see a "TTL" tab), you **cannot** switch it. You must create a new database in the correct "Native Mode" by following the steps below. Doing so means your app will connect to a new, empty database, and **all data from your old database will be lost.** This is a necessary one-time step to ensure all app features work correctly.
+
+### How to Create a New Database in Native Mode
+
+1.  **Go to the Firestore Database section** in your Firebase project.
+2.  At the top of the data viewer, you'll see a dropdown menu that likely shows your current database ID (e.g., "(default)"). Click it and select **"Create new database"**.
+3.  You will now see the "Create a database" screen. This is the most critical step.
+    *   For the database type, select **Cloud Firestore in Native Mode**.
+    *   Choose a location for your database.
+    *   You can give it a unique Database ID (e.g., `ghosttalk-native`) or use the one provided.
+4.  Click **"Create"**. Your project will now have a new, empty database instance running in the correct mode. Your app will automatically connect to it.
 
 ### 2.3. Define the Data Model (`docs/backend.json`)
 
@@ -264,7 +276,7 @@ A core privacy promise of GhostTalk is that data is ephemeral. This is achieved 
 
 1.  Open your project in the [Firebase Console](https://console.firebase.google.com/).
 2.  Navigate to **Build > Firestore Database**.
-3.  In the top tabs (below the "Cloud Firestore" title), click on the **TTL** tab. If you do not see this tab, it is likely your database was created in "Datastore Mode" instead of "Native Mode". You must use Native Mode for this feature.
+3.  In the top tabs (below the "Cloud Firestore" title), click on the **TTL** tab. If you do not see this tab, it means your database was created in "Datastore Mode" instead of "Native Mode". You must use Native Mode for this feature (see Part 2).
 4.  Click the **"Create policy"** button.
 5.  For the **Collection Path**, enter `chatRooms/{roomId}/messages`. This targets the `messages` subcollection within every chat room.
 6.  For the **Time Field**, select `timestamp` from the dropdown. This is the field the policy will use to determine the age of a message.
