@@ -38,7 +38,7 @@ export async function anonymizeMessage(
         "X-Title": "GhostTalk PII Anonymizer"
       },
       body: JSON.stringify({
-        model: "nvidia/nemotron-nano-12b-v2-instruct", // Using a highly capable model
+        model: "qwen/qwen2.5-vl-32b-instruct:free", // Using a highly capable model
         temperature: 0, // Make it deterministic
         max_tokens: 128,
         messages: [

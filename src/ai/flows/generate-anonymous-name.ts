@@ -15,7 +15,7 @@ const openai = new OpenAI({
 export async function generateAnonymousName(): Promise<{ name: string }> {
     try {
         const completion = await openai.chat.completions.create({
-            model: 'nvidia/nemotron-nano-12b-v2-instruct',
+            model: 'qwen/qwen2.5-vl-32b-instruct:free',
             messages: [{ role: 'user', content: `Generate one creative, anonymous username. The username must have a dark, gothic, and adult/adulterous theme. It should be a single word or two words combined without spaces. Return only the username, with no explanation, formatting, or extra text.
 
 Examples: VoidborneLust, RavenbloodAffair, NocturneSin, GraveyardParamour, AbyssalWhisper, DarkenedVow, MourningTemptation, ObsidianDesire, NightshadeLover, PhantomInVelvet, BlackThornSeduce, SinEaterKiss, GothicHeartbound, WraithInSilk, CrimsonTemptress, ShadowSeductress, VixenOfTheVoid, ForbiddenKiss, VelvetSinister, TemptationInBlack, SinfulWhisperer, SilkAndShadows, SeduceTheAbyss, DarkenedEnchantress, KissOfOblivion, SecretTemptation` }],
