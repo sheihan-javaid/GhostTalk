@@ -15,15 +15,20 @@ export async function generateAnonymousName(): Promise<{ name: string }> {
     try {
         const completion = await openai.chat.completions.create({
             model: 'mistralai/mistral-7b-instruct:free',
-            messages: [{ role: 'user', content: `Generate one creative, anonymous username. The username should be dark, brutal, or have adult humor themes. Return only the username, with no explanation or extra text. Examples: ShadowLurker, GrimJester, SerpentWhisper, CrimsonPhantom` }],
-            max_tokens: 20,
-            temperature: 1.2,
+            messages: [{ role: 'user', content: `Generate one creative, anonymous username. The username must have a dark, gothic, and adult/adulterous theme. It should be a single word or two words combined without spaces. Return only the username, with no explanation or extra text.
+
+Examples: VoidborneLust, RavenbloodAffair, NocturneSin, GraveyardParamour, AbyssalWhisper, DarkenedVow, MourningTemptation, ObsidianDesire, NightshadeLover, PhantomInVelvet, BlackThornSeduce, SinEaterKiss, GothicHeartbound, WraithInSilk, CrimsonTemptress, ShadowSeductress, VixenOfTheVoid, ForbiddenKiss, VelvetSinister, TemptationInBlack, SinfulWhisperer, SilkAndShadows, SeduceTheAbyss, DarkenedEnchantress, KissOfOblivion, SecretTemptation` }],
+            max_tokens: 25,
+            temperature: 1.3,
         });
 
-        const name = completion.choices[0].message.content?.trim().replace(/"/g, '') || 'Anonymous';
+        const name = completion.choices[0].message.content?.trim().replace(/"/g, '').replace(/\s+/g, '') || 'FallenSpecter';
         return { name };
     } catch (error) {
         console.error('Failed to generate anonymous name with OpenRouter:', error);
-        return { name: 'Anonymous' + Math.floor(Math.random() * 1000) };
+        // Provide a themed fallback name
+        const fallbacks = ['SinfulWhisper', 'GraveLurker', 'VelvetShadow', 'CrimsonTryst', 'VoidSeeker'];
+        const name = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+        return { name };
     }
 }

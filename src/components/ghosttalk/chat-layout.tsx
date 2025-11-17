@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Lock } from 'lucide-react';
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp, updateDoc, getDoc } from 'firebase/firestore';
-import { addDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import * as crypto from '@/lib/crypto';
 import { useRouter } from 'next/navigation';
 import LoadingGhost from './loading-ghost';
@@ -41,32 +41,21 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
   const [isLoading, setIsLoading] = useState(true);
   const [isParticipant, setIsParticipant] = useState(false);
 
-  // Step 1: Initialize User Profile and Crypto Keys.
+  // Step 1: Initialize User Profile and Crypto Keys. Name is now ephemeral.
   useEffect(() => {
     const initUser = async () => {
       if (user && firestore) {
         await crypto.initializeKeyPair();
 
-        const userDocRef = doc(firestore, 'users', user.uid);
-        const userDocSnapshot = await getDoc(userDocRef);
-        
-        let name = userDocSnapshot.data()?.anonymousName;
-
-        if (name) {
-          setUserName(name);
-        } else {
-          try {
-            const aiName = await generateAnonymousName();
-            name = aiName.name;
-            await setDocumentNonBlocking(userDocRef, { uid: user.uid, anonymousName: name }, { merge: true });
-            setUserName(name);
-          } catch (error) {
-            console.error("Failed to generate/set anonymous name:", error);
-            const fallbackName = 'User' + Math.floor(Math.random() * 9000 + 1000);
-            name = fallbackName;
-            await setDocumentNonBlocking(userDocRef, { uid: user.uid, anonymousName: name }, { merge: true });
-            setUserName(name);
-          }
+        // Generate a new name every time the component mounts
+        try {
+          const aiName = await generateAnonymousName();
+          setUserName(aiName.name);
+        } catch (error) {
+          console.error("Failed to generate anonymous name:", error);
+          const fallbacks = ['SinfulWhisper', 'GraveLurker', 'VelvetShadow', 'CrimsonTryst', 'VoidSeeker'];
+          const fallbackName = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+          setUserName(fallbackName);
         }
       }
     };
@@ -350,7 +339,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
 
   }, [settings]);
 
-  if (isUserLoading || isLoading) {
+  if (isUserLoading || isLoading || !userName) {
     return <LoadingGhost />;
   }
 
