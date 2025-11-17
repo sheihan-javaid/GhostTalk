@@ -2,6 +2,10 @@
 
 import type { AnonymizeMessageInput, AnonymizeMessageOutput } from "@/lib/types";
 
+// In-memory cache for anonymization results
+const anonymizationCache = new Map<string, AnonymizeMessageOutput>();
+
+
 /**
  * Server Action: Anonymizes a message by identifying and redacting ONLY PII using Claude AI.
  * Uses a two-step approach: AI detection + verification for maximum accuracy.
@@ -17,6 +21,12 @@ export async function anonymizeMessage(
       anonymized: false,
     };
   }
+
+  // Check cache first
+  if (anonymizationCache.has(message)) {
+    return anonymizationCache.get(message)!;
+  }
+
 
   try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -78,11 +88,16 @@ CRITICAL RULES:
 
     // The most reliable check is simply if the text has changed.
     const wasAnonymized = anonymizedText !== message;
-    
-    return {
+
+    const result: AnonymizeMessageOutput = {
       anonymizedMessage: anonymizedText,
       anonymized: wasAnonymized,
     };
+    
+    // Store the result in the cache
+    anonymizationCache.set(message, result);
+    
+    return result;
 
   } catch (error) {
     console.error('Error during AI anonymization:', error);

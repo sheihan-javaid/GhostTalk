@@ -11,10 +11,20 @@ const openai = new OpenAI({
   },
 });
 
+// In-memory cache for moderation results
+const moderationCache = new Map<string, { isAppropriate: boolean; reason?: string; }>();
+
+
 export async function moderateConfession(text: string): Promise<{ isAppropriate: boolean; reason?: string; }> {
+  const trimmedText = text.trim();
   try {
-    if (!text.trim()) {
+    if (!trimmedText) {
         return { isAppropriate: true };
+    }
+
+    // Check cache first
+    if (moderationCache.has(trimmedText)) {
+      return moderationCache.get(trimmedText)!;
     }
 
     const completion = await openai.chat.completions.create({
@@ -28,7 +38,7 @@ Respond with a JSON object with two keys: "isAppropriate" (boolean) and "reason"
             },
             {
                 role: 'user',
-                content: `Text: "${text}"`
+                content: `Text: "${trimmedText}"`
             }
         ],
         response_format: { type: 'json_object' },
@@ -49,10 +59,15 @@ Respond with a JSON object with two keys: "isAppropriate" (boolean) and "reason"
       throw new Error('Moderator returned an invalid response format.');
     }
 
-    return {
+    const result = {
       isAppropriate: parsedResponse.isAppropriate,
       reason: parsedResponse.reason,
     };
+    
+    // Store the result in the cache
+    moderationCache.set(trimmedText, result);
+
+    return result;
   } catch (error) {
     console.error('Failed to moderate confession with OpenRouter:', error);
     // Fail closed: if moderation fails for any reason, assume it's not appropriate
