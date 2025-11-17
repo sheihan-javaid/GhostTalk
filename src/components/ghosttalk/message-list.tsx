@@ -9,6 +9,7 @@ import { Timestamp } from 'firebase/firestore';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '../ui/textarea';
+import Image from 'next/image';
 
 interface MessageListProps {
   messages: Message[];
@@ -62,8 +63,17 @@ function MessageItem({ message, isCurrentUser, onDeleteMessage, onEditMessage }:
         isCurrentUser ? 'rounded-br-none motion-safe:hover:-translate-x-1' : 'rounded-bl-none motion-safe:hover:translate-x-1'
       )}
     >
-      <p className="text-sm break-words">{message.text}</p>
-      {isCurrentUser && (
+      {message.media && (
+        <Image 
+            src={message.media} 
+            alt="Shared media"
+            width={400}
+            height={400}
+            className="rounded-md max-h-64 w-auto object-contain mb-2"
+        />
+      )}
+      {message.text && <p className="text-sm break-words">{message.text}</p>}
+      {isCurrentUser && !message.media && ( // Editing only allowed for text-only messages for now
         <div className="absolute top-0 right-0 m-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -72,10 +82,27 @@ function MessageItem({ message, isCurrentUser, onDeleteMessage, onEditMessage }:
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                    <DropdownMenuItem onSelect={() => setIsEditing(true)}>
+                    <DropdownMenuItem onSelect={() => setIsEditing(true)} disabled={!!message.media}>
                         <Pencil className="mr-2 h-4 w-4" />
                         <span>Edit</span>
                     </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => onDeleteMessage(message.id)} className="text-red-500">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Delete</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+      )}
+       {isCurrentUser && message.media && ( // Separate simpler menu for media messages
+        <div className="absolute top-0 right-0 m-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
                     <DropdownMenuItem onSelect={() => onDeleteMessage(message.id)} className="text-red-500">
                         <Trash2 className="mr-2 h-4 w-4" />
                         <span>Delete</span>
@@ -96,13 +123,11 @@ function MessageItem({ message, isCurrentUser, onDeleteMessage, onEditMessage }:
       )}
     >
       <div className="flex items-center gap-2 px-1">
-        {!isCurrentUser && (
-            <Avatar className="h-6 w-6">
-                <AvatarFallback className="bg-muted text-muted-foreground text-xs">
-                    <User className="h-4 w-4"/>
-                </AvatarFallback>
-            </Avatar>
-        )}
+        <Avatar className="h-6 w-6">
+            <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+                <User className="h-4 w-4"/>
+            </AvatarFallback>
+        </Avatar>
         <span className="text-xs text-muted-foreground">{message.username}</span>
       </div>
       {messageContent}

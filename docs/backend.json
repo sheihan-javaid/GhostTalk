@@ -27,7 +27,7 @@
         },
         "payloads": {
           "type": "object",
-          "description": "A map where each key is a recipient's UID and the value is the Base64-encoded, encrypted message payload for that recipient."
+          "description": "A map where each key is a recipient's UID and the value is the Base64-encoded, encrypted message payload for that recipient. The payload contains both text and optional media."
         },
         "timestamp": {
           "type": "object",

@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { anonymizeMessage } from '@/ai/flows/anonymize-message-flow';
 import { generateAnonymousName } from '@/ai/flows/generate-anonymous-name';
-import type { Message, UiSettings, ChatMessage } from '@/lib/types';
+import type { Message, UiSettings, ChatMessage, MessagePayload } from '@/lib/types';
 import MessageList from './message-list';
 import MessageInput from './message-input';
 import ChatHeader from './chat-header';
@@ -24,6 +24,16 @@ const defaultSettings: UiSettings = {
   fontSize: 'medium',
   bubbleStyle: 'rounded',
   animationIntensity: 'medium',
+};
+
+// Helper to convert a File to a Data URL
+const fileToDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+    });
 };
 
 export default function ChatLayout({ roomId: initialRoomId }: { roomId:string }) {
@@ -160,25 +170,24 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
             if (now - messageTime > expirySeconds * 1000) return null;
         }
 
-        let decryptedText = '';
+        let decryptedPayload: MessagePayload;
         try {
           const userPayload = concreteMsg.payloads?.[user.uid];
           if (userPayload) {
-            decryptedText = await crypto.decrypt(userPayload);
+            const decryptedString = await crypto.decrypt(userPayload);
+            decryptedPayload = JSON.parse(decryptedString);
           } else {
-             // This can happen if a user joins after a message was sent.
-             // Or if the message is corrupted.
             return null;
           }
         } catch (error) {
-            console.warn("Could not decrypt message:", error, "Message ID:", concreteMsg.id);
-            decryptedText = "🔒 A message you couldn't decrypt was filtered out.";
+            console.warn("Could not decrypt or parse message payload:", error, "Message ID:", concreteMsg.id);
             return null;
         }
         
         return {
           id: concreteMsg.id,
-          text: decryptedText,
+          text: decryptedPayload.text,
+          media: decryptedPayload.media,
           userId: concreteMsg.senderId,
           username: concreteMsg.senderName,
           timestamp: concreteMsg.timestamp,
@@ -197,15 +206,15 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
   }, [firestoreMessages, settings.messageExpiry, isParticipant, user]);
 
 
-  const handleSendMessage = useCallback(async (rawText: string, shouldAnonymize: boolean) => {
-    if (!rawText.trim() || isSending || !user || !userName || !currentRoomId || !firestore || !isParticipant) return;
+  const handleSendMessage = useCallback(async (rawText: string, shouldAnonymize: boolean, mediaFile?: File) => {
+    if ((!rawText.trim() && !mediaFile) || isSending || !user || !userName || !currentRoomId || !firestore || !isParticipant) return;
     setIsSending(true);
 
     try {
       let textToSend = rawText;
       let wasAnonymized = false;
 
-      if (shouldAnonymize) {
+      if (shouldAnonymize && textToSend) {
           const result = await anonymizeMessage({ message: textToSend });
           textToSend = result.anonymizedMessage;
           wasAnonymized = result.anonymized;
@@ -218,6 +227,10 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
               });
           }
       }
+
+      const mediaDataUrl = mediaFile ? await fileToDataUrl(mediaFile) : undefined;
+      const payload: MessagePayload = { text: textToSend, media: mediaDataUrl };
+      const payloadString = JSON.stringify(payload);
 
       const roomDocRef = doc(firestore, 'chatRooms', currentRoomId);
       const roomSnapshot = await getDoc(roomDocRef);
@@ -233,7 +246,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
         const participant = participants[uid];
         if (participant && participant.publicKey) {
           const recipientPublicKey = await crypto.importPublicKey(participant.publicKey);
-          encryptedPayloads[uid] = await crypto.encrypt(textToSend, recipientPublicKey);
+          encryptedPayloads[uid] = await crypto.encrypt(payloadString, recipientPublicKey);
         }
       }
       
@@ -275,11 +288,15 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
         const participants = roomSnapshot.data()?.participants || {};
         
         const newPayloads: { [key: string]: string } = {};
+        
+        // Editing only changes the text, so media is undefined in this new payload.
+        const payload: MessagePayload = { text: newText };
+        const payloadString = JSON.stringify(payload);
 
         for (const uid in participants) {
             if (participants[uid] && participants[uid].publicKey) {
                 const recipientPublicKey = await crypto.importPublicKey(participants[uid].publicKey);
-                newPayloads[uid] = await crypto.encrypt(newText, recipientPublicKey);
+                newPayloads[uid] = await crypto.encrypt(payloadString, recipientPublicKey);
             }
         }
 
@@ -365,5 +382,3 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     </div>
   );
 }
-
-    

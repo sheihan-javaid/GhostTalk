@@ -1,10 +1,17 @@
 import { FieldValue } from 'firebase/firestore';
 import { z } from 'zod';
 
+// The decrypted payload of a message. Can contain text and/or media.
+export interface MessagePayload {
+  text: string;
+  media?: string; // data URL for images
+}
+
 // Represents the decrypted, in-app message object
 export interface Message {
   id: string;
   text: string;
+  media?: string;
   userId: string;
   username: string;
   timestamp: any | FieldValue;
