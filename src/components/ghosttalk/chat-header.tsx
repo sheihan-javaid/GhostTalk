@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Ghost, Settings, Copy, Check, Palette, Shield, Info } from 'lucide-react';
+import { Ghost, Settings, Copy, Check, Palette, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -14,12 +14,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { UiSettings } from '@/lib/types';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 
 interface ChatHeaderProps {
@@ -55,19 +49,7 @@ export default function ChatHeader({ roomId, isPublic, onSettingsChange, setting
       <div className="flex items-center gap-2 sm:gap-4">
         
         {isPublic && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-2 text-muted-foreground text-xs">
-                  <Info className="h-4 w-4" />
-                  <span>Public Lobby</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="max-w-xs">This is a public lobby. In very large rooms, not all participants may receive every message to ensure performance.</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+            <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-md">Public Lobby</span>
         )}
 
         {!isPublic && (
@@ -118,4 +100,5 @@ export default function ChatHeader({ roomId, isPublic, onSettingsChange, setting
     </header>
   );
 }
+
 

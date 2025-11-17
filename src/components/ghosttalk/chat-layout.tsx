@@ -26,8 +26,6 @@ const defaultSettings: UiSettings = {
   animationIntensity: 'medium',
 };
 
-const RECIPIENT_CAP = 50; // Cap recipients to 50 for performance
-
 // Helper to convert a File to a Data URL
 const fileToDataUrl = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -141,7 +139,6 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
               [`participants.${user.uid}`]: {
                   publicKey: publicKeyJwk,
                   name: userName,
-                  joinedAt: serverTimestamp(), // Add timestamp for sorting
               }
           });
           setIsParticipant(true); 
@@ -247,23 +244,16 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
 
       const roomDocRef = doc(firestore, 'chatRooms', currentRoomId);
       const roomSnapshot = await getDoc(roomDocRef);
-      const allParticipants = roomSnapshot.data()?.participants || {};
+      const participants = roomSnapshot.data()?.participants || {};
       
-      if (Object.keys(allParticipants).length === 0) {
+      if (Object.keys(participants).length === 0) {
           throw new Error("There are no participants in the room to send the message to.");
       }
       
-      // Performance optimization: Cap the number of recipients
-      const recentParticipants = Object.entries(allParticipants)
-        .sort(([, a]: any, [, b]: any) => (b.joinedAt?.toMillis() || 0) - (a.joinedAt?.toMillis() || 0))
-        .slice(0, RECIPIENT_CAP)
-        .reduce((acc, [uid, data]) => ({ ...acc, [uid]: data }), {});
-        
-
       const encryptedPayloads: { [key: string]: string } = {};
       
-      for (const uid in recentParticipants) {
-        const participant = recentParticipants[uid];
+      for (const uid in participants) {
+        const participant = participants[uid];
         if (participant && participant.publicKey) {
           try {
             const recipientPublicKey = await crypto.importPublicKey(participant.publicKey);
@@ -317,7 +307,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
         
         const newPayloads: { [key: string]: string } = {};
         
-        // Re-encrypt for the same (potentially capped) set of users
+        // Re-encrypt for the same set of users
         const messageRef = doc(firestore, 'chatRooms', currentRoomId, 'messages', messageId);
         const messageSnap = await getDoc(messageRef);
         const originalPayloads = messageSnap.data()?.payloads || {};
@@ -419,4 +409,5 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     </div>
   );
 }
+
 
