@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -57,7 +58,7 @@ export default function MessageInput({ onSendMessage, isSending }: MessageInputP
               <div
                 className={cn(
                   "flex items-center space-x-2 cursor-pointer transition-all duration-300 rounded-lg p-1",
-                  shouldAnonymize && "shadow-[0_0_15px_-3px_hsl(var(--accent))] animate-pulse"
+                  shouldAnonymize && "shadow-[0_0_15px_-3px_hsl(var(--accent))]"
                 )}
               >
                 <Switch
