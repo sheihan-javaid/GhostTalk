@@ -258,7 +258,7 @@ export default function Home() {
                   <span className="text-2xl font-headline">Support Us</span>
                 </CardTitle>
                 <CardDescription>
-                  While this app is free, running the AI and backend services can have costs. Your support helps keep it alive.
+                  Strengthen the veil that guards your whispers.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -307,9 +307,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
-    
-    
-
-    
