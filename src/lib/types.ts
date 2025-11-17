@@ -16,7 +16,7 @@ export interface Message {
 export interface ChatMessage {
   senderId: string;
   senderName: string;
-  encryptedPayload: string;
+  payloads: { [key: string]: string }; // A map of encrypted payloads, one for each user
   timestamp: any | FieldValue;
   anonymized?: boolean;
   isEdited?: boolean;
@@ -55,5 +55,3 @@ export const AnonymizeMessageOutputSchema = z.object({
     ),
 });
 export type AnonymizeMessageOutput = z.infer<typeof AnonymizeMessageOutputSchema>;
-
-    

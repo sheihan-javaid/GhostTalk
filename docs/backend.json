@@ -25,9 +25,9 @@
             "type": "string",
             "description": "The anonymous name of the sender."
         },
-        "encryptedPayload": {
-          "type": "string",
-          "description": "The Base64-encoded, encrypted message payload."
+        "payloads": {
+          "type": "object",
+          "description": "A map where each key is a recipient's UID and the value is the Base64-encoded, encrypted message payload for that recipient."
         },
         "timestamp": {
           "type": "object",
@@ -42,7 +42,7 @@
             "description": "Indicates if the message has been edited."
         }
       },
-      "required": ["senderId", "senderName", "encryptedPayload", "timestamp"]
+      "required": ["senderId", "senderName", "payloads", "timestamp"]
     },
     "ChatRoom": {
       "$schema": "http://json-schema.org/draft-07/schema#",

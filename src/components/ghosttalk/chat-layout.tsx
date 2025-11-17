@@ -3,14 +3,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { anonymizeMessage } from '@/ai/flows/anonymize-message-flow';
 import { generateAnonymousName } from '@/ai/flows/generate-anonymous-name';
-import type { Message, UiSettings, ChatMessage, AnonymizeMessageInput } from '@/lib/types';
+import type { Message, UiSettings, ChatMessage } from '@/lib/types';
 import MessageList from './message-list';
 import MessageInput from './message-input';
 import ChatHeader from './chat-header';
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Lock } from 'lucide-react';
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp, updateDoc, getDoc, writeBatch } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, doc, getDocs, where, limit, addDoc, Timestamp, updateDoc, getDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import * as crypto from '@/lib/crypto';
 import { useRouter } from 'next/navigation';
@@ -156,7 +156,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
   
   // Step 4: Process and decrypt messages.
   useEffect(() => {
-    if (!firestoreMessages || !isParticipant) return; 
+    if (!firestoreMessages || !isParticipant || !user) return; 
 
     const processMessages = async () => {
       const now = Date.now();
@@ -173,10 +173,16 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
 
         let decryptedText = '';
         try {
-          if (concreteMsg.encryptedPayload) {
-            decryptedText = await crypto.decrypt(concreteMsg.encryptedPayload);
+          const userPayload = concreteMsg.payloads?.[user.uid];
+          if (userPayload) {
+            decryptedText = await crypto.decrypt(userPayload);
+          } else {
+             // This can happen if a user joins after a message was sent.
+             // Or if the message is corrupted.
+            return null;
           }
         } catch (error) {
+            console.warn("Could not decrypt message:", error, "Message ID:", concreteMsg.id);
             decryptedText = "🔒 A message you couldn't decrypt was filtered out.";
             return null;
         }
@@ -199,7 +205,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     };
 
     processMessages();
-  }, [firestoreMessages, settings.messageExpiry, isParticipant]);
+  }, [firestoreMessages, settings.messageExpiry, isParticipant, user]);
 
 
   const handleSendMessage = useCallback(async (rawText: string, shouldAnonymize: boolean) => {
@@ -230,38 +236,25 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
       
       if (Object.keys(participants).length === 0) throw new Error("No other participants in the room.");
 
-      const batch = writeBatch(firestore);
-      const messageId = doc(collection(firestore, 'dummy')).id; // Generate a new ID
-      const messageRef = doc(firestore, 'chatRooms', currentRoomId, 'messages', messageId);
+      const encryptedPayloads: { [key: string]: string } = {};
 
-      const baseMessageData = {
-          senderId: user.uid,
-          senderName: userName,
-          timestamp: serverTimestamp(),
-          anonymized: wasAnonymized,
-          isEdited: false
-      };
-
-      // Encrypt for all participants including self
       for (const uid in participants) {
-          if (participants[uid] && participants[uid].publicKey) {
-              const recipientPublicKey = await crypto.importPublicKey(participants[uid].publicKey);
-              const encryptedPayload = await crypto.encrypt(textToSend, recipientPublicKey);
-              
-              // This is a simplified model. A more robust one would store payloads per user.
-              // For now, we are creating a single message document that only the sender can decrypt.
-              // This is a limitation of the current simplified E2EE model.
-              // A better model stores a map of payloads `encryptedPayloads: { [uid]: '...' }`
-              if (uid === user.uid) {
-                batch.set(messageRef, {
-                    ...baseMessageData,
-                    encryptedPayload: encryptedPayload
-                });
-              }
-          }
+        if (participants[uid] && participants[uid].publicKey) {
+          const recipientPublicKey = await crypto.importPublicKey(participants[uid].publicKey);
+          encryptedPayloads[uid] = await crypto.encrypt(textToSend, recipientPublicKey);
+        }
       }
       
-      await batch.commit();
+      const newMessage = {
+        senderId: user.uid,
+        senderName: userName,
+        timestamp: serverTimestamp(),
+        anonymized: wasAnonymized,
+        isEdited: false,
+        payloads: encryptedPayloads,
+      };
+      
+      await addDocumentNonBlocking(collection(firestore, 'chatRooms', currentRoomId, 'messages'), newMessage);
 
     } catch (error: any) {
       console.error("Failed to send message:", error);
@@ -289,15 +282,18 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
         const roomSnapshot = await getDoc(roomDocRef);
         const participants = roomSnapshot.data()?.participants || {};
         
-        const selfPublicKeyJwk = participants[user.uid]?.publicKey;
-        if (!selfPublicKeyJwk) throw new Error("Could not find own public key to re-encrypt message.");
+        const newPayloads: { [key: string]: string } = {};
 
-        const selfPublicKey = await crypto.importPublicKey(selfPublicKeyJwk);
-        const selfEncryptedPayload = await crypto.encrypt(newText, selfPublicKey);
+        for (const uid in participants) {
+            if (participants[uid] && participants[uid].publicKey) {
+                const recipientPublicKey = await crypto.importPublicKey(participants[uid].publicKey);
+                newPayloads[uid] = await crypto.encrypt(newText, recipientPublicKey);
+            }
+        }
 
         const messageRef = doc(firestore, 'chatRooms', currentRoomId, 'messages', messageId);
         await updateDocumentNonBlocking(messageRef, {
-            encryptedPayload: selfEncryptedPayload,
+            payloads: newPayloads,
             isEdited: true
         });
 
