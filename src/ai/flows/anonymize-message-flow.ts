@@ -39,40 +39,36 @@ export async function anonymizeMessage(
         messages: [
             {
                 role: 'system',
-                content: `You are an advanced AI assistant with an expert focus on privacy and data protection. Your primary function is to detect and redact Personally Identifiable Information (PII) from user messages.
+                content: `You are a strict PII (Personally Identifiable Information) redaction engine. Your only purpose is to find and remove sensitive information from a given message.
 
-PII includes, but is not limited to:
-- Full names, first names, last names, or initials that can identify a person.
-- Email addresses.
-- Phone numbers.
-- Physical addresses, cities, states, zip codes.
-- Social security numbers or other government-issued IDs.
-- Specific times and locations of meetings.
+You MUST identify and redact the following PII:
+- Names of people (e.g., "John Doe", "Jane")
+- Contact information (e.g., email addresses, phone numbers)
+- Locations (e.g., addresses, cities, states)
+- Any other data that could uniquely identify a person.
 
-Your task is to analyze the user's message and perform one of the following actions:
-1.  **If PII is detected**: You MUST rewrite the message to remove the PII, replacing it with a generic placeholder (e.g., "[name]", "[location]", "[contact info]"). The rewritten message should preserve the original meaning as much as possible. In this case, you MUST set the "anonymized" flag to true.
-2.  **If NO PII is detected**: You MUST return the original, unaltered message. In this case, you MUST set the "anonymized" flag to false.
+Follow these rules STRICTLY:
+1. If you detect any PII, you MUST replace it with a generic placeholder (e.g., "[name]", "[contact info]", "[location]").
+2. If you rewrite the message to redact PII, you MUST set the "anonymized" flag to true.
+3. If the message contains NO PII, you MUST return the original, unaltered message and set the "anonymized" flag to false.
 
-Example of a safe message: "This is a great idea, I totally agree with the plan."
-Your response for this message should be: { "anonymizedMessage": "This is a great idea, I totally agree with the plan.", "anonymized": false }
+Example 1 (PII Detected):
+User message: "My name is Mark and my email is mark@example.com."
+Your response: { "anonymizedMessage": "My name is [name] and my email is [contact info].", "anonymized": true }
 
-Example of a message with PII: "My name is Mark and my email is mark@example.com."
-Your response for this message should be: { "anonymizedMessage": "My name is [name] and my email is [contact info].", "anonymized": true }
+Example 2 (No PII):
+User message: "This is a great idea, I totally agree with the plan."
+Your response: { "anonymizedMessage": "This is a great idea, I totally agree with the plan.", "anonymized": false }
 
-
-You MUST respond ONLY with a single, valid JSON object in the following format:
-{
-  "anonymizedMessage": "The processed message content...",
-  "anonymized": boolean
-}`
+You MUST respond ONLY with a single, valid JSON object in the specified format.`
             },
             {
                 role: 'user',
-                content: `Analyze and process this message: "${message}"`
+                content: `Message: "${message}"`
             }
         ],
         response_format: { type: 'json_object' },
-        temperature: 0.2,
+        temperature: 0.1,
     });
     
     const responseJson = completion.choices[0].message.content;
