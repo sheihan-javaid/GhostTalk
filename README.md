@@ -14,7 +14,8 @@ This document provides a comprehensive, step-by-step guide to building a full-st
 7.  [Part 7: Building the Real-time Chat](#part-7-building-the-real-time-chat)
 8.  [Part 8: Building the Ghost Lounge Features](#part-8-building-the-ghost-lounge-features)
 9.  [Part 9: Backend Cloud Function for Room Cleanup](#part-9-backend-cloud-function-for-room-cleanup)
-10. [Part 10: AI Integration for Anonymization & Content Moderation](#part-10-ai-integration)
+10. [Part 10: Automatic Data Deletion (TTL Policy)](#part-10-automatic-data-deletion-ttl-policy)
+11. [Part 11: AI Integration for Anonymization & Content Moderation](#part-11-ai-integration)
 
 ---
 
@@ -247,14 +248,32 @@ These are standalone features accessible from the home page.
 -   **File**: `src/functions/index.js` (and its `package.json`)
 -   **Trigger**: `onDocumentUpdated` on the `chatRooms` collection.
 -   **Logic**:
-    1.  The function checks if a change occurred in a room where `isWhisper` is `true`.
-    2.  It compares the `participants` map before and after the update.
-    3.  If the number of participants has dropped to zero, it means the last person has left.
-    4.  It then deletes the entire chat room document from Firestore, effectively deleting the room and making its messages inaccessible.
+    1.  The function checks if a change occurred in a non-public room's `participants` map.
+    2.  If the number of participants has dropped to zero, it means the last person has left.
+    3.  It then deletes the entire chat room document from Firestore, effectively deleting the room and making its messages inaccessible.
 
 ---
 
-## Part 10: AI Integration
+## Part 10: Automatic Data Deletion (TTL Policy)
+
+A core privacy promise of GhostTalk is that data is ephemeral. This is achieved using Firestore's built-in **Time-to-Live (TTL)** feature, which automatically deletes data after a specified duration. This is a **server-side configuration** and cannot be set from the app's code.
+
+### 10.1. How to Set Up the 15-Day Message Deletion Policy
+
+1.  Open your project in the [Firebase Console](https://console.firebase.google.com/).
+2.  Navigate to **Build > Firestore Database**.
+3.  In the top tabs (below the "Cloud Firestore" title), click on the **TTL** tab.
+4.  Click the **"Create policy"** button.
+5.  For the **Collection Path**, enter `chatRooms/{roomId}/messages`. This targets the `messages` subcollection within every chat room.
+6.  For the **Time Field**, select `timestamp` from the dropdown. This is the field the policy will use to determine the age of a message.
+7.  Set the **TTL Period** to **15 Days**.
+8.  Click **"Save"**.
+
+Once this policy is active, Firestore will automatically delete any message document 15 days after it was created. This ensures user data is not stored indefinitely.
+
+---
+
+## Part 11: AI Integration
 
 The AI flows add intelligence to the app. They are all defined in the `src/ai/flows` directory.
 
