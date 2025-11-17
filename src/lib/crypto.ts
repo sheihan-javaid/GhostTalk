@@ -100,7 +100,7 @@ export async function importPublicKey(jwk: JsonWebKey): Promise<CryptoKey> {
     jwk,
     { name: 'X25519' },
     true,
-    []
+    [] // A public key for X25519 is not used for derivation itself, so usages can be empty.
   );
   
   return publicKey;
@@ -171,7 +171,7 @@ export async function encrypt(
   );
   
   const sharedSecret = await crypto.subtle.deriveKey(
-    { name: 'ECDH', public: recipientPublicKey },
+    { name: 'X25519', public: recipientPublicKey },
     ephemeralKeyPair.privateKey,
     { name: 'AES-GCM', length: 256 },
     false, // Not extractable
@@ -248,7 +248,7 @@ export async function decrypt(encryptedPackageB64: string): Promise<string> {
   const senderEphemeralPublicKey = await importPublicKey(ephemPubKey);
   
   const sharedSecret = await crypto.subtle.deriveKey(
-    { name: 'ECDH', public: senderEphemeralPublicKey },
+    { name: 'X25519', public: senderEphemeralPublicKey },
     myPrivateKey,
     { name: 'AES-GCM', length: 256 },
     false,
