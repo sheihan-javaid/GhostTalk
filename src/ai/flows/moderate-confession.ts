@@ -28,7 +28,7 @@ export async function moderateConfession(text: string): Promise<{ isAppropriate:
     }
 
     const completion = await openai.chat.completions.create({
-        model: 'nvidia/nemotron-4-12b-v2', 
+        model: 'nvidia/nemotron-nano-12b-v2-instruct', 
         messages: [
             {
                 role: 'system',
