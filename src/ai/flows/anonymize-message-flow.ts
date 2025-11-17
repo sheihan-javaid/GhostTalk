@@ -1,11 +1,10 @@
-
 'use server';
 
 import type { AnonymizeMessageInput, AnonymizeMessageOutput } from "@/lib/types";
 
 /**
  * Server Action: Anonymizes a message by identifying and redacting ONLY PII using Claude AI.
- * This provides intelligent, context-aware PII detection while preserving all other content.
+ * Uses a two-step approach: AI detection + verification for maximum accuracy.
  */
 export async function anonymizeMessage(
   input: AnonymizeMessageInput
@@ -30,40 +29,63 @@ export async function anonymizeMessage(
       },
       body: JSON.stringify({
         model: "anthropic/claude-sonnet-4-20250514",
-        max_tokens: 1000,
+        temperature: 0, // Make it deterministic
+        max_tokens: 2000,
         messages: [
           {
-            role: "system",
-            content: "You are a PII redaction system. You MUST output ONLY the redacted text with no explanations, no preamble, no markdown formatting. Just the text with PII replaced by placeholders."
-          },
-          {
             role: "user",
-            content: `Redact ALL personally identifiable information (PII) from the text below. Replace PII with these exact placeholders:
+            content: `You are a strict PII detection and redaction system. Analyze the text and replace ALL personally identifiable information with natural, generic replacements that maintain sentence flow.
 
-- Full names → [name]
-- Email addresses → [email]
-- Phone numbers → [phone]
-- Street/physical addresses → [address]
-- Social security numbers → [ssn]
-- Credit card numbers → [credit_card]
-- Bank account numbers → [account]
-- Driver's license numbers → [license]
-- Passport numbers → [passport]
-- IP addresses → [ip]
-- Dates of birth → [dob]
-- Medical record numbers → [medical_id]
+REPLACEMENT RULES (you MUST follow these exactly):
+- Person names (any name) → "someone" or "a person"
+- Locations (cities, states, countries) → "somewhere" or "a place"
+- Email addresses → "an email address"
+- Phone numbers → "a phone number"
+- Street addresses → "an address"
+- Ages or dates of birth → "a certain age"
+- Company/workplace names → "a company"
+- Usernames/handles → "a username"
+- Specific dates → "a date"
+- Credit card numbers → "a credit card"
+- Social security numbers → "an identification number"
+- Any other PII → use generic equivalent
 
-CRITICAL: Output ONLY the redacted text. Do NOT add explanations, notes, or formatting. Preserve all non-PII words, punctuation, and structure exactly.
+EXAMPLES:
+Input: "My name is John and I live in NY"
+Output: "My name is someone and I live in somewhere"
 
-Text:
-${message}`
+Input: "Contact Sarah at sarah@email.com or call 555-1234"
+Output: "Contact someone at an email address or call a phone number"
+
+Input: "I'm Alice, 25 years old, from California working at Google"
+Output: "I'm someone, a certain age, from somewhere working at a company"
+
+Input: "Hi, I'm Bob from Texas"
+Output: "Hi, I'm someone from somewhere"
+
+Input: "Email me at john.doe@gmail.com"
+Output: "Email me at an email address"
+
+CRITICAL RULES:
+1. Output ONLY the redacted text with natural replacements
+2. Do NOT include explanations, notes, or markdown
+3. Preserve exact punctuation, spacing, and sentence structure
+4. Make replacements sound natural and grammatically correct
+5. Be aggressive - when in doubt, replace it with a generic term
+6. Even single names or location abbreviations MUST be replaced
+
+TEXT TO REDACT:
+${message}
+
+REDACTED TEXT:`
           }
-        ],
+        ]
       })
     });
 
     if (!response.ok) {
-      console.error('AI anonymization failed, falling back to original message');
+      const errorText = await response.text();
+      console.error('OpenRouter API error:', response.status, errorText);
       return {
         anonymizedMessage: message,
         anonymized: false,
@@ -72,34 +94,37 @@ ${message}`
 
     const data = await response.json();
     
-    // Extract the content and clean it
-    let anonymizedText = data.choices?.[0]?.message?.content?.trim() || message;
+    // Extract the content
+    let anonymizedText = data.choices?.[0]?.message?.content || message;
     
-    // Remove any markdown code blocks if present
-    anonymizedText = anonymizedText.replace(/```[a-z]*\n?/g, '').trim();
-    
-    // Remove common AI preambles
-    const preambles = [
-      /^Here is the redacted text:?\s*/i,
-      /^Here's the text with PII redacted:?\s*/i,
-      /^Redacted text:?\s*/i,
-      /^The redacted version is:?\s*/i
-    ];
-    
-    for (const pattern of preambles) {
-      anonymizedText = anonymizedText.replace(pattern, '');
-    }
+    // Clean up the response
+    anonymizedText = anonymizedText
+      .trim()
+      // Remove markdown code blocks
+      .replace(/```[a-z]*\n?/g, '')
+      .replace(/```/g, '')
+      // Remove common preambles
+      .replace(/^(Here is the |Here's the |The )?redacted text:?\s*/i, '')
+      .replace(/^Output:?\s*/i, '')
+      .replace(/^Result:?\s*/i, '')
+      .replace(/^REDACTED TEXT:?\s*/i, '')
+      .trim();
 
-    // Check if any PII was actually redacted
-    const piiPlaceholders = [
-      '[name]', '[email]', '[phone]', '[address]', '[ssn]', 
-      '[credit_card]', '[account]', '[license]', '[passport]', 
-      '[ip]', '[dob]', '[medical_id]'
+    // Verify that PII was actually redacted by checking for generic replacements
+    const genericTerms = [
+      'someone', 'a person', 'somewhere', 'a place', 'an email address',
+      'a phone number', 'an address', 'a certain age', 'a company',
+      'a username', 'a date', 'a credit card', 'an identification number'
     ];
     
-    const wasAnonymized = piiPlaceholders.some(placeholder => 
-      anonymizedText.includes(placeholder)
-    );
+    const wasAnonymized = genericTerms.some(term => 
+      anonymizedText.toLowerCase().includes(term.toLowerCase())
+    ) || anonymizedText !== message; // Also check if text changed at all
+
+    // Additional safety check: if output looks identical to input, log warning
+    if (anonymizedText === message) {
+      console.warn('Warning: AI returned identical text, possible PII not detected');
+    }
 
     return {
       anonymizedMessage: anonymizedText,
@@ -108,7 +133,6 @@ ${message}`
 
   } catch (error) {
     console.error('Error during AI anonymization:', error);
-    // Fallback: return original message if AI call fails
     return {
       anonymizedMessage: message,
       anonymized: false,
