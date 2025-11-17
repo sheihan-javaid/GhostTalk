@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -102,7 +103,7 @@ export default function Home() {
           Welcome to <span className="text-accent">GhostTalk</span>
         </h1>
         <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-          Anonymous , encrypted , untraceble
+          Anonymous , Encrypted & Untraceble
         </p>
       </div>
 
@@ -306,3 +307,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
