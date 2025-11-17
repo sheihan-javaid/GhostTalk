@@ -96,7 +96,7 @@ Create the following directory structure inside the `src/` folder:
 
 In the Firebase Console, navigate to the "Build" section:
 1.  **Authentication**: Click "Get started" and enable the **Anonymous** sign-in provider.
-2.  **Firestore Database**: Click "Create database," start in **production mode**, and choose a location.
+2.  **Firestore Database**: Click "Create database." **CRITICAL:** You must create the database in **Native Mode**. Do NOT select Datastore mode. Start in **production mode** and choose a location.
 
 ### 2.3. Define the Data Model (`docs/backend.json`)
 
@@ -262,7 +262,7 @@ A core privacy promise of GhostTalk is that data is ephemeral. This is achieved 
 
 1.  Open your project in the [Firebase Console](https://console.firebase.google.com/).
 2.  Navigate to **Build > Firestore Database**.
-3.  In the top tabs (below the "Cloud Firestore" title), click on the **TTL** tab.
+3.  In the top tabs (below the "Cloud Firestore" title), click on the **TTL** tab. If you do not see this tab, it is likely your database was created in "Datastore Mode" instead of "Native Mode". You must use Native Mode for this feature.
 4.  Click the **"Create policy"** button.
 5.  For the **Collection Path**, enter `chatRooms/{roomId}/messages`. This targets the `messages` subcollection within every chat room.
 6.  For the **Time Field**, select `timestamp` from the dropdown. This is the field the policy will use to determine the age of a message.
