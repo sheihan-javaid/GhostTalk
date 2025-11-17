@@ -96,7 +96,9 @@ Create the following directory structure inside the `src/` folder:
 
 In the Firebase Console, navigate to the "Build" section:
 1.  **Authentication**: Click "Get started" and enable the **Anonymous** sign-in provider.
-2.  **Firestore Database**: Click "Create database." **CRITICAL:** You must create the database in **Native Mode**. Do NOT select Datastore mode. Start in **production mode** and choose a location.
+2.  **Firestore Database**: Click "Create database." **CRITICAL:** You must create the database in **Native Mode**. Do NOT select Datastore mode, as features like TTL (Time-to-Live) are only available in Native Mode. Start in **production mode** and choose a location.
+
+> **⚠️ Important Warning:** If you have already created a database in "Datastore Mode", you **cannot** switch it. You must create a new project or a new database instance in the correct "Native Mode". Doing so means your app will connect to a new, empty database, and **all data from your old database will not be carried over.** This is a necessary one-time step to ensure all app features work correctly.
 
 ### 2.3. Define the Data Model (`docs/backend.json`)
 
