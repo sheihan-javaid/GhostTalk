@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { dracula } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 
 const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
@@ -34,7 +34,7 @@ const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
                 </Button>
             </div>
             <SyntaxHighlighter
-                style={atomOneDark}
+                style={dracula}
                 language={match[1]}
                 PreTag="div"
                 {...props}
