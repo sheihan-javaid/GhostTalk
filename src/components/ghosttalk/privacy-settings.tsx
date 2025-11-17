@@ -16,7 +16,7 @@ const expiryOptions = [
   { value: '3600', label: '1 Hour' },
   { value: '86400', label: '1 Day' },
   { value: '604800', label: '7 Days' },
-  { value: '0', label: 'Never' },
+  { value: '1296000', label: '15 Days' },
 ];
 
 interface PrivacySettingsProps {
