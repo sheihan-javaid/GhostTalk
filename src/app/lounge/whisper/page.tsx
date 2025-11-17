@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
 import { collection, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -43,7 +44,7 @@ export default function WhisperPage() {
         const userName = userDoc.data()?.anonymousName || 'Anonymous';
 
         if (publicKeyJwk) {
-          await updateDoc(docRef, {
+          updateDocumentNonBlocking(docRef, {
             [`participants.${user.uid}`]: {
               publicKey: publicKeyJwk,
               name: userName,
@@ -130,3 +131,5 @@ export default function WhisperPage() {
     </Card>
   );
 }
+
+    

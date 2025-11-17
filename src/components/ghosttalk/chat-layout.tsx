@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -115,7 +116,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
 
       const publicKeyJwk = await crypto.exportMyPublicKey();
       if (publicKeyJwk) {
-          await updateDoc(roomDocRef, {
+          await updateDocumentNonBlocking(roomDocRef, {
               [`participants.${user.uid}`]: {
                   publicKey: publicKeyJwk,
                   name: userName
@@ -364,3 +365,5 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     </div>
   );
 }
+
+    
