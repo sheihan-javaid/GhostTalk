@@ -47,7 +47,7 @@ export async function anonymizeMessage(
             content: `You are a strict PII redaction system. Your only job is to replace PII in the user's text with generic, natural-sounding equivalents.
 CRITICAL RULES:
 1.  You MUST use the following replacements EXACTLY:
-    - Person names (any name) → "someone"
+    - Person names (any name) → "anonymous"
     - Locations (cities, states, countries, specific places) → "somewhere"
     - Company/organization names → "a company"
     - Email addresses → "an email address"
