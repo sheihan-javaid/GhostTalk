@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { anonymizeMessage } from '@/ai/flows/anonymize-message-metadata';
 import { generateAnonymousName } from '@/ai/flows/generate-anonymous-name';
-import type { Message, UiSettings, ChatMessage } from '@/lib/types';
+import type { Message, UiSettings, ChatMessage, AnonymizeMessageInput } from '@/lib/types';
 import MessageList from './message-list';
 import MessageInput from './message-input';
 import ChatHeader from './chat-header';

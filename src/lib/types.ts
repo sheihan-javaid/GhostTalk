@@ -30,3 +30,13 @@ export interface UiSettings {
     showUsername: boolean;
     animationIntensity: 'low' | 'medium' | 'off';
 }
+
+// AI Flow Types
+export interface AnonymizeMessageInput {
+  message: string;
+}
+
+export interface AnonymizeMessageOutput {
+  anonymizedMessage: string;
+  anonymized: boolean;
+}

@@ -5,15 +5,15 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import type { AnonymizeMessageInput, AnonymizeMessageOutput } from '@/lib/types';
 
 // Define the schema for the input, which is just the message text.
-export const AnonymizeMessageInputSchema = z.object({
+const AnonymizeMessageInputSchema = z.object({
   message: z.string().describe('The text of the message to be anonymized.'),
 });
-export type AnonymizeMessageInput = z.infer<typeof AnonymizeMessageInputSchema>;
 
 // Define the schema for the structured output we expect from the AI.
-export const AnonymizeMessageOutputSchema = z.object({
+const AnonymizeMessageOutputSchema = z.object({
   anonymizedMessage: z
     .string()
     .describe(
@@ -25,9 +25,7 @@ export const AnonymizeMessageOutputSchema = z.object({
       'A boolean flag indicating whether the message was altered. True if PII was detected and removed, false otherwise.'
     ),
 });
-export type AnonymizeMessageOutput = z.infer<
-  typeof AnonymizeMessageOutputSchema
->;
+
 
 // Define the main function that other parts of the app will call.
 // This is an async wrapper around our Genkit flow.
