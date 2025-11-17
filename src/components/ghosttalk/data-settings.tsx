@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import * as crypto from '@/lib/crypto';
 import { Copy, Trash2, RefreshCcw, AlertTriangle } from "lucide-react";
 import React from "react";
+import { useRouter } from "next/navigation";
 
 interface DataSettingsProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ interface DataSettingsProps {
 
 export default function DataSettings({ isOpen, onOpenChange }: DataSettingsProps) {
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleExportKeys = () => {
     const keyPairString = crypto.exportMyKeyPairString();
@@ -56,10 +58,10 @@ export default function DataSettings({ isOpen, onOpenChange }: DataSettingsProps
     crypto.initializeKeyPair(true).then(() => {
         toast({
             title: "Identity Regenerated",
-            description: "New keys created. You will need to rejoin rooms.",
+            description: "New keys created. You will be returned to the home screen.",
         });
-        // Force a page reload to re-initialize the app state with new keys
-        window.location.reload();
+        // Navigate to home to re-initialize the app state with new keys
+        router.push('/');
     });
   };
 
@@ -68,9 +70,9 @@ export default function DataSettings({ isOpen, onOpenChange }: DataSettingsProps
         crypto.clearLocalCache();
         toast({
             title: "Cache Cleared",
-            description: "All local GhostTalk data has been removed.",
+            description: "All local GhostTalk data has been removed. You will be returned to the home screen.",
         });
-        window.location.reload();
+        router.push('/');
     } catch(e) {
         toast({
             variant: "destructive",
