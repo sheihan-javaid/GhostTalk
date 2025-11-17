@@ -10,6 +10,10 @@ import type { AnonymizeMessageInput, AnonymizeMessageOutput } from '@/lib/types'
 const openai = new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey: process.env.OPENROUTER_API_KEY,
+    defaultHeaders: {
+        "HTTP-Referer": "https://ghost-talk-ai.web.app",
+        "X-Title": "GhostTalk",
+    },
 });
 
 /**
@@ -51,6 +55,10 @@ Your task is to analyze the user's message and perform one of the following acti
 
 Example of a safe message: "This is a great idea, I totally agree with the plan."
 Your response for this message should be: { "anonymizedMessage": "This is a great idea, I totally agree with the plan.", "anonymized": false }
+
+Example of a message with PII: "My name is Mark and my email is mark@example.com."
+Your response for this message should be: { "anonymizedMessage": "My name is [name] and my email is [contact info].", "anonymized": true }
+
 
 You MUST respond ONLY with a single, valid JSON object in the following format:
 {

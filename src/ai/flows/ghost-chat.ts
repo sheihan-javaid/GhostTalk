@@ -8,6 +8,10 @@ const apiKey = process.env.OPENROUTER_API_KEY;
 const openai = apiKey ? new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
   apiKey: apiKey,
+  defaultHeaders: {
+    "HTTP-Referer": "https://ghost-talk-ai.web.app",
+    "X-Title": "GhostTalk",
+  },
 }) : null;
 
 // The message format for the OpenAI library is different from Genkit's MessageData
