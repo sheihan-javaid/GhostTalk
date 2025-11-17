@@ -102,7 +102,7 @@ export default function Home() {
           Welcome to <span className="text-accent">GhostTalk</span>
         </h1>
         <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-          A truly anonymous, secure, and private chat experience. No accounts. No logs. Just conversations.
+          Anonymous , encrypted , untraceble
         </p>
       </div>
 
