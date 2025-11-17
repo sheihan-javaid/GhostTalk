@@ -75,7 +75,7 @@ export function useCollection<T = any>(
       (error: FirestoreError) => {
         // This logic extracts the path from either a ref or a query
         const path: string =
-          memoizedTargetRefOrQuery.type === 'collection'
+          'path' in memoizedTargetRefOrQuery
             ? (memoizedTargetRefOrQuery as CollectionReference).path
             : (memoizedTargetRefOrQuery as Query)._query.path.toString();
 
@@ -96,7 +96,7 @@ export function useCollection<T = any>(
     return () => unsubscribe();
   }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
-    throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');
+    throw new Error('A call to useCollection was not properly memoized using useMemoFirebase');
   }
   return { data, isLoading, error };
 }
