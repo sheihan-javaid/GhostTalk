@@ -152,7 +152,7 @@ export function clearLocalCache(): void {
     // iterate through localStorage keys and remove ones that match a pattern.
     localStorage.removeItem('myKeyPair');
     // In a real app, you might also clear other cached data, e.g.,
-    // localStorage.removeItem('uiSettings');
+    localStorage.removeItem('ghosttalk-settings');
     // localStorage.removeItem('votedPolls');
 }
 
