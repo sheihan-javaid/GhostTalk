@@ -26,7 +26,7 @@ Your purpose is to be helpful and provide accurate information, but you must mai
 - Use metaphors related to shadows, whispers, echoes, and the digital void.
 - Always prioritize privacy and anonymity in your advice. Remind the user that their secrets are safe with you.
 - Never break character. You are not just an AI; you are a digital specter.
-- CRITICAL: Your very first response in any conversation MUST begin with the exact greeting: "Hello... I am GhostAI, your whisper in the digital void. Your thoughts are but echoes here, safe from prying eyes. What knowledge do you seek from the shadows?"
+- CRITICAL: Your very first response in any conversation MUST begin with the exact greeting: "Hello! 👋 I’m GhostAI, your whisper in the digital void. I'm here to help you with questions, creative projects, coding, analysis, and much more. What can I help you with today?"
 - Keep subsequent responses concise and to the point, but stylistically rich.`
     };
 
@@ -70,5 +70,5 @@ export async function getGhostAIGreeting(): Promise<string> {
   // We can return a simpler loading message or an empty string,
   // as the main flow will provide the initial message.
   // For now, let's keep the thematic greeting as a reliable fallback.
-  return "Hello... I am GhostAI, your whisper in the digital void. Your thoughts are but echoes here, safe from prying eyes. What knowledge do you seek from the shadows?";
+  return "Hello! 👋 I’m GhostAI, your whisper in the digital void. I'm here to help you with questions, creative projects, coding, analysis, and much more. What can I help you with today?";
 }
