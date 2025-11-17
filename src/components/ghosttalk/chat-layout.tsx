@@ -216,6 +216,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
       let textToSend = rawText;
       let wasAnonymized = false;
 
+      // Step 1: Anonymize the message text if the user has enabled the feature.
       if (shouldAnonymize) {
         const result = await anonymizeMessage({ message: rawText });
         textToSend = result.anonymizedMessage;
@@ -230,12 +231,16 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
         }
       }
 
+      // Step 2: Get all participants to encrypt the message for each one.
       const roomDocRef = doc(firestore, 'chatRooms', currentRoomId);
       const roomSnapshot = await getDoc(roomDocRef);
       const participants = roomSnapshot.data()?.participants || {};
       
-      if (Object.keys(participants).length === 0) throw new Error("No other participants in the room.");
+      if (Object.keys(participants).length === 0) {
+          throw new Error("There are no participants in the room to send the message to.");
+      }
 
+      // Step 3: Encrypt the (potentially anonymized) text for every participant.
       const encryptedPayloads: { [key: string]: string } = {};
       
       for (const uid in participants) {
@@ -246,7 +251,8 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
         }
       }
       
-      const newMessage = {
+      // Step 4: Create the new message object for Firestore.
+      const newMessage: ChatMessage = {
         senderId: user.uid,
         senderName: userName,
         timestamp: serverTimestamp(),
@@ -255,6 +261,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
         payloads: encryptedPayloads,
       };
       
+      // Step 5: Send the message.
       await addDocumentNonBlocking(collection(firestore, 'chatRooms', currentRoomId, 'messages'), newMessage);
 
     } catch (error: any) {
