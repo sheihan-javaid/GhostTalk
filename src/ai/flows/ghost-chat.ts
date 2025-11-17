@@ -52,7 +52,7 @@ export async function ghostChat(history: any[]): Promise<string> {
         const openAIHistory = mapHistoryToOpenAI(history);
 
         const completion = await openai.chat.completions.create({
-            model: 'qwen/qwen-2.5-7b-instruct',
+            model: 'nvidia/nemotron-4-12b-v2',
             messages: openAIHistory,
             max_tokens: 128,
             temperature: 0.7,
