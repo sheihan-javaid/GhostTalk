@@ -1,3 +1,4 @@
+
 'use client';
 
 // ============================================================================
@@ -10,11 +11,11 @@ interface StoredKeyPair {
 }
 
 /**
- * Generate a new X25519 key pair for the current user
+ * Generate a new ECDH P-256 key pair for the current user
  */
 export async function generateKeyPair(): Promise<CryptoKeyPair> {
   const keyPair = await crypto.subtle.generateKey(
-    { name: 'X25519' },
+    { name: 'ECDH', namedCurve: 'P-256' },
     true, // Can be exported
     ['deriveKey'] // Private key can be used to derive secret keys
   );
@@ -48,7 +49,7 @@ export async function getMyPrivateKey(): Promise<CryptoKey | null> {
   const privateKey = await crypto.subtle.importKey(
     'jwk',
     parsed.privateKey,
-    { name: 'X25519' },
+    { name: 'ECDH', namedCurve: 'P-256' },
     true,
     ['deriveKey']
   );
@@ -68,7 +69,7 @@ export async function getMyPublicKey(): Promise<CryptoKey | null> {
   const publicKey = await crypto.subtle.importKey(
     'jwk',
     parsed.publicKey,
-    { name: 'X25519' },
+    { name: 'ECDH', namedCurve: 'P-256' },
     true,
     [] // Public keys for ECDH have no key usages
   );
@@ -98,7 +99,7 @@ export async function importPublicKey(jwk: JsonWebKey): Promise<CryptoKey> {
   const publicKey = await crypto.subtle.importKey(
     'jwk',
     jwk,
-    { name: 'X25519' },
+    { name: 'ECDH', namedCurve: 'P-256' },
     true,
     [] // Public keys for ECDH have no key usages
   );
