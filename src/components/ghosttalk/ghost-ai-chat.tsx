@@ -5,9 +5,49 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ghostChat, getGhostAIGreeting } from '@/ai/flows/ghost-chat';
-import { Loader2, Bot, User, Send } from 'lucide-react';
+import { Loader2, Bot, User, Send, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
+
+const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
+    const [isCopied, setIsCopied] = useState(false);
+    const match = /language-(\w+)/.exec(className || '');
+    const code = String(children).replace(/\n$/, '');
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(code);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+    };
+
+    return !inline && match ? (
+        <div className="relative bg-background/50 my-2 rounded-lg border">
+             <div className="flex items-center justify-between px-4 py-1 border-b">
+                <span className="text-xs text-muted-foreground">{match[1]}</span>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy}>
+                    {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                </Button>
+            </div>
+            <SyntaxHighlighter
+                style={atomOneDark}
+                language={match[1]}
+                PreTag="div"
+                {...props}
+                customStyle={{ margin: 0, padding: '1rem', background: 'transparent' }}
+            >
+                {code}
+            </SyntaxHighlighter>
+        </div>
+    ) : (
+        <code className={cn("bg-muted/50 text-accent font-mono rounded px-1 py-0.5", className)} {...props}>
+            {children}
+        </code>
+    );
+};
 
 
 export default function GhostAiChat() {
@@ -92,7 +132,13 @@ export default function GhostAiChat() {
                                     ? 'bg-primary text-primary-foreground rounded-br-none' 
                                     : 'bg-background rounded-bl-none'
                             )}>
-                                <p className="text-sm whitespace-pre-wrap">{getMessageText(msg)}</p>
+                                <div className="text-sm prose prose-sm prose-invert max-w-none">
+                                    <ReactMarkdown
+                                        components={{ code: CodeBlock }}
+                                    >
+                                        {getMessageText(msg)}
+                                    </ReactMarkdown>
+                                </div>
                             </div>
                             {msg.role === 'user' && (
                                 <Avatar className="h-8 w-8 shrink-0">
