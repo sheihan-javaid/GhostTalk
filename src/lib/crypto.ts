@@ -10,11 +10,11 @@ interface StoredKeyPair {
 }
 
 /**
- * Generate a new ECDH key pair for the current user
+ * Generate a new X25519 key pair for the current user
  */
 export async function generateKeyPair(): Promise<CryptoKeyPair> {
   const keyPair = await crypto.subtle.generateKey(
-    { name: 'ECDH', namedCurve: 'P-256' },
+    { name: 'X25519' },
     true,
     ['deriveKey']
   );
@@ -48,7 +48,7 @@ export async function getMyPrivateKey(): Promise<CryptoKey | null> {
   const privateKey = await crypto.subtle.importKey(
     'jwk',
     parsed.privateKey,
-    { name: 'ECDH', namedCurve: 'P-256' },
+    { name: 'X25519' },
     true,
     ['deriveKey']
   );
@@ -68,7 +68,7 @@ export async function getMyPublicKey(): Promise<CryptoKey | null> {
   const publicKey = await crypto.subtle.importKey(
     'jwk',
     parsed.publicKey,
-    { name: 'ECDH', namedCurve: 'P-256' },
+    { name: 'X25519' },
     true,
     []
   );
@@ -98,7 +98,7 @@ export async function importPublicKey(jwk: JsonWebKey): Promise<CryptoKey> {
   const publicKey = await crypto.subtle.importKey(
     'jwk',
     jwk,
-    { name: 'ECDH', namedCurve: 'P-256' },
+    { name: 'X25519' },
     true,
     []
   );
@@ -165,7 +165,7 @@ export async function encrypt(
   const encodedText = enc.encode(text);
   
   const ephemeralKeyPair = await crypto.subtle.generateKey(
-    { name: 'ECDH', namedCurve: 'P-256' },
+    { name: 'X25519' },
     true,
     ['deriveKey']
   );
