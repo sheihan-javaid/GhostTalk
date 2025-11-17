@@ -237,10 +237,11 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
       if (Object.keys(participants).length === 0) throw new Error("No other participants in the room.");
 
       const encryptedPayloads: { [key: string]: string } = {};
-
+      
       for (const uid in participants) {
-        if (participants[uid] && participants[uid].publicKey) {
-          const recipientPublicKey = await crypto.importPublicKey(participants[uid].publicKey);
+        const participant = participants[uid];
+        if (participant && participant.publicKey) {
+          const recipientPublicKey = await crypto.importPublicKey(participant.publicKey);
           encryptedPayloads[uid] = await crypto.encrypt(textToSend, recipientPublicKey);
         }
       }
