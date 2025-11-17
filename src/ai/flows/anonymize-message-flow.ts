@@ -1,31 +1,27 @@
 'use server';
-/**
- * @fileoverview This file defines the server action for anonymizing messages using the OpenAI library.
- */
 
 import OpenAI from 'openai';
 import type { AnonymizeMessageInput, AnonymizeMessageOutput } from '@/lib/types';
 
-// Initialize the OpenAI client to use the OpenRouter API.
+// Initialize OpenAI through OpenRouter
 const openai = new OpenAI({
-    baseURL: 'https://openrouter.ai/api/v1',
-    apiKey: process.env.OPENROUTER_API_KEY,
-    defaultHeaders: {
-        "HTTP-Referer": "https://ghost-talk-ai.web.app",
-        "X-Title": "GhostTalk",
-    },
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
+  defaultHeaders: {
+    "HTTP-Referer": "https://ghost-talk-ai.web.app",
+    "X-Title": "GhostTalk",
+  },
 });
 
 /**
- * The server action that client components will call.
- * This function analyzes a message for PII and removes it.
+ * Server Action: Anonymizes a message by removing ONLY PII.
+ * If anonymization is disabled or no PII is found → returns original message.
  */
 export async function anonymizeMessage(
   input: AnonymizeMessageInput
 ): Promise<AnonymizeMessageOutput> {
   const { message } = input;
 
-  // If the message is empty or just whitespace, don't call the AI.
   if (!message.trim()) {
     return {
       anonymizedMessage: message,
@@ -35,60 +31,80 @@ export async function anonymizeMessage(
 
   try {
     const completion = await openai.chat.completions.create({
-        model: 'google/gemini-pro', 
-        messages: [
-            {
-                role: 'system',
-                content: `You are a strict PII (Personally Identifiable Information) redaction engine. Your only purpose is to find and remove sensitive information from a given message.
+      model: "google/gemini-pro",
+      response_format: { type: "json_object" },
+      temperature: 0.1,
+      messages: [
+        {
+          role: "system",
+          content: `
+You are a STRICT PII-removal engine. 
 
-You MUST identify and redact the following PII:
-- Names of people (e.g., "John Doe", "Jane")
-- Contact information (e.g., email addresses, phone numbers)
-- Locations (e.g., addresses, cities, states)
-- Any other data that could uniquely identify a person.
+You MUST:
+- Detect and redact ONLY real PII.
+- Do NOT modify or paraphrase NON-PII text.
+- Keep sentence structure identical unless PII must be removed.
+- Output JSON ONLY.
 
-Follow these rules STRICTLY:
-1. If you detect any PII, you MUST replace it with a generic placeholder (e.g., "[name]", "[contact info]", "[location]").
-2. If you rewrite the message to redact PII, you MUST set the "anonymized" flag to true.
-3. If the message contains NO PII, you MUST return the original, unaltered message and set the "anonymized" flag to false.
+PII to redact:
+- Names of people (John, Sarah, Rahul, etc.)
+- Contact details (email, phone, WhatsApp, etc.)
+- Locations (cities, states, addresses)
+- Identifiers (passport, Aadhaar, ID numbers)
 
-Example 1 (PII Detected):
-User message: "My name is Mark and my email is mark@example.com."
-Your response: { "anonymizedMessage": "My name is [name] and my email is [contact info].", "anonymized": true }
+Redaction format:
+  [name], [contact], [location], [id]
 
-Example 2 (No PII):
-User message: "This is a great idea, I totally agree with the plan."
-Your response: { "anonymizedMessage": "This is a great idea, I totally agree with the plan.", "anonymized": false }
+Examples:
 
-You MUST respond ONLY with a single, valid JSON object in the specified format.`
-            },
-            {
-                role: 'user',
-                content: `Message: "${message}"`
-            }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.1,
+Input: "My name is Rahul and I live in Delhi."
+Output: 
+{"anonymizedMessage":"My name is [name] and I live in [location].", "anonymized":true}
+
+Input: "I think this idea is amazing."
+Output:
+{"anonymizedMessage":"I think this idea is amazing.", "anonymized":false}
+
+IMPORTANT:
+- If NO PII detected → anonymized MUST be false.
+- If ANY PII removed → anonymized MUST be true.
+- Do NOT hallucinate PII.
+- Do NOT rewrite non-PII words.
+`
+        },
+        {
+          role: "user",
+          content: `Message: "${message}"`
+        }
+      ]
     });
-    
-    const responseJson = completion.choices[0].message.content;
 
-    if (!responseJson) {
-      throw new Error('AI returned an empty response.');
+    const raw = completion.choices?.[0]?.message?.content;
+
+    if (!raw) throw new Error("Empty AI response");
+
+    let parsed: AnonymizeMessageOutput;
+
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      console.error("Invalid JSON from AI:", raw);
+      throw new Error("AI returned invalid JSON");
     }
 
-    const parsedResponse = JSON.parse(responseJson) as AnonymizeMessageOutput;
-
-    // Ensure the response has the expected shape
-    if (typeof parsedResponse.anonymizedMessage !== 'string' || typeof parsedResponse.anonymized !== 'boolean') {
-      throw new Error('AI returned an invalid response format.');
+    if (
+      typeof parsed.anonymizedMessage !== "string" ||
+      typeof parsed.anonymized !== "boolean"
+    ) {
+      throw new Error("AI returned wrong structure");
     }
 
-    return parsedResponse;
+    return parsed;
 
   } catch (error) {
-    console.error('Anonymization action failed:', error);
-    // On failure, return the original message to avoid blocking the user.
+    console.error("Anonymization failed:", error);
+
+    // Fallback: return original message unmodified
     return {
       anonymizedMessage: message,
       anonymized: false,
