@@ -29,7 +29,7 @@ export async function moderateConfession(text: string): Promise<{ isAppropriate:
     }
 
     const completion = await openai.chat.completions.create({
-        model: 'qwen/qwen-2.5-7b-instruct', 
+        model: 'qwen/qwen-2.5-7b-instruct',
         messages: [
             {
                 role: 'system',
@@ -57,7 +57,12 @@ Respond with a JSON object with two keys: "isAppropriate" (boolean) and "reason"
 
     // Ensure the response has the expected shape
     if (typeof parsedResponse.isAppropriate !== 'boolean') {
-      throw new Error('Moderator returned an invalid response format.');
+      // Fail closed if the AI returns a malformed response
+      console.warn('Moderator returned an invalid response format:', parsedResponse);
+      return {
+        isAppropriate: false,
+        reason: 'Content could not be automatically verified by the moderator.',
+      };
     }
 
     const result = {

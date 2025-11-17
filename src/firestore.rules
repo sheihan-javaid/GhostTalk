@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===== Users Collection =====
+    match /users/{userId} {
+      // Anyone can read user profiles (to get anonymous names)
+      allow read: if true;
+      // A user can create their own profile
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // A user can only update their own profile
+      allow update: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ===== Chat Rooms Collection =====
+    match /chatRooms/{roomId} {
+      // Any authenticated user can read room metadata to find rooms
+      allow get, list: if request.auth != null;
+
+      // Authenticated users can create rooms
+      allow create: if request.auth != null;
+
+      // Allow authenticated users to add/update their own entry in the participants map
+      // This is how users join or leave a room.
+      allow update: if request.auth != null &&
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['participants.' + request.auth.uid]);
+
+      // Deletion is handled by the onParticipantLeave Cloud Function when a room is empty.
+      // Client-side deletion is disallowed to prevent a participant from deleting a room with others in it.
+      allow delete: if false;
+
+      // ===== Messages Subcollection =====
+      match /messages/{messageId} {
+        // A user can read messages only if they are a participant in the room.
+        allow read: if request.auth != null && get(/databases/$(database)/documents/chatRooms/$(roomId)).data.participants[request.auth.uid] != null;
+
+        // A user can list messages only if they are a participant in the room.
+        allow list: if request.auth != null && get(/databases/$(database)/documents/chatRooms/$(roomId)).data.participants[request.auth.uid] != null;
+        
+        // A user can write messages only if they are a participant in the room.
+        allow create: if request.auth != null && get(/databases/$(database)/documents/chatRooms/$(roomId)).data.participants[request.auth.uid] != null;
+
+        // User can update or delete their own messages.
+        allow update, delete: if request.auth != null && resource.data.senderId == request.auth.uid;
+      }
+    }
+
+    // ===== Confessions Collection =====
+    match /confessions/{confessionId} {
+      // Anyone can read confessions.
+      allow read: if true;
+      // Any authenticated user can post a confession.
+      allow create: if request.auth != null;
+      // Any authenticated user can like a confession.
+      allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']);
+    }
+
+    // ===== Polls Collection =====
+    match /polls/{pollId} {
+      // Anyone can read polls.
+      allow read: if true;
+      // Any authenticated user can create a poll.
+      allow create: if request.auth != null;
+      // Any authenticated user can vote.
+      allow update: if request.auth != null;
+    }
+  }
+}
