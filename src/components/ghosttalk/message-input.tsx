@@ -97,23 +97,7 @@ export default function MessageInput({ onSendMessage, isSending }: MessageInputP
         disabled={isSending}
       />
       <div className="flex justify-between items-center">
-        <div className='flex items-center gap-1'>
-            <TooltipProvider delayDuration={300}>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                    <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isSending}>
-                        <Paperclip />
-                        <span className="sr-only">Attach media</span>
-                    </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                    <p>Attach an image (max 2MB)</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-
-            <TooltipProvider delayDuration={300}>
+        <TooltipProvider delayDuration={300}>
             <Tooltip>
                 <TooltipTrigger asChild>
                 <div
@@ -145,14 +129,29 @@ export default function MessageInput({ onSendMessage, isSending }: MessageInputP
                 <p>Use AI to strip personal data from your message before sending.</p>
                 </TooltipContent>
             </Tooltip>
+        </TooltipProvider>
+
+        <div className="flex items-center gap-2">
+            <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                    <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isSending}>
+                        <Paperclip />
+                        <span className="sr-only">Attach media</span>
+                    </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                    <p>Attach an image (max 2MB)</p>
+                    </TooltipContent>
+                </Tooltip>
             </TooltipProvider>
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
+
+            <Button type="submit" disabled={isSending || (!text.trim() && !mediaFile)} className="font-semibold">
+            {isSending ? 'Sending...' : 'Send'}
+            <Send className="ml-2 h-4 w-4" />
+            </Button>
         </div>
-
-
-        <Button type="submit" disabled={isSending || (!text.trim() && !mediaFile)} className="font-semibold">
-          {isSending ? 'Sending...' : 'Send'}
-          <Send className="ml-2 h-4 w-4" />
-        </Button>
       </div>
     </form>
   );
