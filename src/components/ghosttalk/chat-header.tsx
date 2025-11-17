@@ -1,17 +1,18 @@
 
 'use client';
 
-import { Ghost, Settings, Copy, Check, Palette, Shield } from 'lucide-react';
+import { Ghost, Settings, Copy, Check, Palette, Shield, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import ChatSettings from './chat-settings';
 import PrivacySettings from './privacy-settings';
+import DataSettings from './data-settings';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import type { UiSettings } from '@/lib/types';
 
@@ -28,6 +29,7 @@ export default function ChatHeader({ roomId, isPublic, onSettingsChange, setting
   const [isCopied, setIsCopied] = useState(false);
   const [isAppearanceSettingsOpen, setIsAppearanceSettingsOpen] = useState(false);
   const [isPrivacySettingsOpen, setIsPrivacySettingsOpen] = useState(false);
+  const [isDataSettingsOpen, setIsDataSettingsOpen] = useState(false);
 
   useEffect(() => {
     // This needs to run on the client to get the window.location
@@ -79,6 +81,11 @@ export default function ChatHeader({ roomId, isPublic, onSettingsChange, setting
               <Shield className="mr-2 h-4 w-4" />
               <span>Privacy</span>
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
+             <DropdownMenuItem onSelect={() => setIsDataSettingsOpen(true)}>
+              <Database className="mr-2 h-4 w-4" />
+              <span>Data & Identity</span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -96,9 +103,12 @@ export default function ChatHeader({ roomId, isPublic, onSettingsChange, setting
             currentSettings={settings}
         />
 
+        <DataSettings
+            isOpen={isDataSettingsOpen}
+            onOpenChange={setIsDataSettingsOpen}
+        />
+
       </div>
     </header>
   );
 }
-
-

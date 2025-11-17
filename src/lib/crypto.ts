@@ -89,6 +89,16 @@ export async function exportMyPublicKey(): Promise<JsonWebKey | null> {
 }
 
 /**
+ * Export the full key pair as a string
+ */
+export function exportMyKeyPairString(): string | null {
+    const stored = localStorage.getItem('myKeyPair');
+    if (!stored) return null;
+    return stored;
+}
+
+
+/**
  * Import someone else's public key from JWK
  */
 export async function importPublicKey(jwk: JsonWebKey): Promise<CryptoKey> {
@@ -110,20 +120,42 @@ export async function importPublicKey(jwk: JsonWebKey): Promise<CryptoKey> {
 /**
  * Initialize key pair if not exists
  */
-export async function initializeKeyPair(): Promise<void> {
-  try {
-    const existing = localStorage.getItem('myKeyPair');
-    if (existing) {
-        JSON.parse(existing);
-        return;
+export async function initializeKeyPair(forceNew: boolean = false): Promise<void> {
+  if (!forceNew) {
+    try {
+      const existing = localStorage.getItem('myKeyPair');
+      if (existing) {
+          JSON.parse(existing);
+          return;
+      }
+    } catch (e) {
+        console.warn("Could not parse existing key pair, generating new one.", e);
     }
-  } catch (e) {
-      console.warn("Could not parse existing key pair, generating new one.", e);
   }
   
   const keyPair = await generateKeyPair();
   await storeMyKeyPair(keyPair);
 }
+
+/**
+ * Clears the user's keys from local storage.
+ */
+export function clearMyKeys(): void {
+    localStorage.removeItem('myKeyPair');
+}
+
+/**
+ * Clears all chat-related data from local storage.
+ */
+export function clearLocalCache(): void {
+    // This is a simple implementation. A more robust solution might
+    // iterate through localStorage keys and remove ones that match a pattern.
+    localStorage.removeItem('myKeyPair');
+    // In a real app, you might also clear other cached data, e.g.,
+    // localStorage.removeItem('uiSettings');
+    // localStorage.removeItem('votedPolls');
+}
+
 
 // ============================================================================
 // ENCRYPTION / DECRYPTION
