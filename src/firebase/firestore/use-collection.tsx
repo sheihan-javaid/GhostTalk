@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -74,6 +75,8 @@ export function useCollection<T = any>(
       },
       (error: FirestoreError) => {
         // This logic extracts the path from either a ref or a query
+        if (!memoizedTargetRefOrQuery) return; // Should not happen due to guard clause, but for type safety
+        
         const path: string =
           'path' in memoizedTargetRefOrQuery
             ? (memoizedTargetRefOrQuery as CollectionReference).path
@@ -100,3 +103,6 @@ export function useCollection<T = any>(
   }
   return { data, isLoading, error };
 }
+
+
+    

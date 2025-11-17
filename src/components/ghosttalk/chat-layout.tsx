@@ -109,8 +109,6 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
             const docRef = await addDoc(roomsRef, newRoom);
             finalRoomId = docRef.id;
           }
-          setCurrentRoomId(finalRoomId);
-          setIsPublicRoom(true);
         } catch (error) {
           console.error("Error resolving lobby:", error);
           toast({ variant: 'destructive', title: 'Lobby Error', description: 'Could not find or create a public lobby.' });
@@ -127,11 +125,17 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
           router.push('/');
           return;
       }
+      
+      const roomData = roomSnap.data();
 
       // If it's a private room, check the isPublic flag from the document
       if (!isPublic) {
-          setIsPublicRoom(roomSnap.data()?.isPublic || false);
+          setIsPublicRoom(roomData?.isPublic || false);
+      } else {
+          setIsPublicRoom(true);
       }
+      setCurrentRoomId(finalRoomId);
+
 
       const publicKeyJwk = await crypto.exportMyPublicKey();
       if (publicKeyJwk) {
@@ -411,3 +415,6 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
 }
 
 
+
+
+    
