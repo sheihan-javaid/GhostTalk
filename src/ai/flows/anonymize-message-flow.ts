@@ -1,3 +1,4 @@
+
 'use server';
 
 import type { AnonymizeMessageInput, AnonymizeMessageOutput } from "@/lib/types";
@@ -32,30 +33,29 @@ export async function anonymizeMessage(
         max_tokens: 1000,
         messages: [
           {
+            role: "system",
+            content: "You are a PII redaction system. You MUST output ONLY the redacted text with no explanations, no preamble, no markdown formatting. Just the text with PII replaced by placeholders."
+          },
+          {
             role: "user",
-            content: `You are a PII (Personally Identifiable Information) anonymizer. Your task is to identify and redact ONLY the following types of PII in the text below:
+            content: `Redact ALL personally identifiable information (PII) from the text below. Replace PII with these exact placeholders:
 
-- Full names (first and last names of real people)
-- Email addresses
-- Phone numbers
-- Physical addresses (street addresses, apartment numbers)
-- Social security numbers
-- Credit card numbers
-- Bank account numbers
-- Driver's license numbers
-- Passport numbers
-- IP addresses
-- Dates of birth
-- Medical record numbers
+- Full names → [name]
+- Email addresses → [email]
+- Phone numbers → [phone]
+- Street/physical addresses → [address]
+- Social security numbers → [ssn]
+- Credit card numbers → [credit_card]
+- Bank account numbers → [account]
+- Driver's license numbers → [license]
+- Passport numbers → [passport]
+- IP addresses → [ip]
+- Dates of birth → [dob]
+- Medical record numbers → [medical_id]
 
-IMPORTANT RULES:
-1. Replace each type of PII with a placeholder in square brackets: [name], [email], [phone], [address], [ssn], [credit_card], [account], [license], [passport], [ip], [dob], [medical_id]
-2. Do NOT redact common words, pronouns, or generic references
-3. Do NOT redact company names, product names, or brand names unless they are part of a personal identifier
-4. Preserve ALL punctuation, formatting, and non-PII content exactly as written
-5. Return ONLY the anonymized text with no explanations or additional commentary
+CRITICAL: Output ONLY the redacted text. Do NOT add explanations, notes, or formatting. Preserve all non-PII words, punctuation, and structure exactly.
 
-Text to anonymize:
+Text:
 ${message}`
           }
         ],
@@ -71,7 +71,24 @@ ${message}`
     }
 
     const data = await response.json();
-    const anonymizedText = data.choices?.[0]?.message?.content?.trim() || message;
+    
+    // Extract the content and clean it
+    let anonymizedText = data.choices?.[0]?.message?.content?.trim() || message;
+    
+    // Remove any markdown code blocks if present
+    anonymizedText = anonymizedText.replace(/```[a-z]*\n?/g, '').trim();
+    
+    // Remove common AI preambles
+    const preambles = [
+      /^Here is the redacted text:?\s*/i,
+      /^Here's the text with PII redacted:?\s*/i,
+      /^Redacted text:?\s*/i,
+      /^The redacted version is:?\s*/i
+    ];
+    
+    for (const pattern of preambles) {
+      anonymizedText = anonymizedText.replace(pattern, '');
+    }
 
     // Check if any PII was actually redacted
     const piiPlaceholders = [
