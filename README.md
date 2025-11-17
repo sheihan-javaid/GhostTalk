@@ -98,7 +98,7 @@ In the Firebase Console, navigate to the "Build" section:
 1.  **Authentication**: Click "Get started" and enable the **Anonymous** sign-in provider.
 2.  **Firestore Database**: Click "Create database."
 
-> **CRITICAL:** You must create the database in **Native Mode**. Do NOT select Datastore mode, as features like TTL (Time-to-Live) are only available in Native Mode. Start in **production mode** and choose a location.
+> **CRITICAL: You must create the database in Native Mode.** Do NOT select Datastore mode, as features like TTL (Time-to-Live) are only available in Native Mode. Start in **production mode** and choose a location.
 
 > **⚠️ Important Warning on Datastore Mode:** If you have already created a database in "Datastore Mode" (e.g., you don't see a "TTL" tab), you **cannot** switch it. You must create a new database in the correct "Native Mode" by following the steps below. Doing so means your app will connect to a new, empty database, and **all data from your old database will be lost.** This is a necessary one-time step to ensure all app features work correctly.
 
@@ -271,6 +271,8 @@ These are standalone features accessible from the home page.
 ## Part 10: Automatic Data Deletion (TTL Policy)
 
 A core privacy promise of GhostTalk is that data is ephemeral. This is achieved using Firestore's built-in **Time-to-Live (TTL)** feature, which automatically deletes data after a specified duration. This is a **server-side configuration** and cannot be set from the app's code.
+
+> **Final Note on TTL vs. Extensions:** While it is technically possible to replicate TTL behavior using Firebase Extensions (like "Schedule Functions"), this is strongly discouraged for this application. A custom function would be less efficient, more complex, and potentially incur costs. The built-in TTL feature in **Native Mode** is the correct, simplest, and most cost-effective solution.
 
 ### 10.1. How to Set Up the 15-Day Message Deletion Policy
 
