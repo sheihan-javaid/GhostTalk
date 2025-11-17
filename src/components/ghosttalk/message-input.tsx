@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 interface MessageInputProps {
   onSendMessage: (text: string, shouldAnonymize: boolean) => void;
@@ -53,7 +54,12 @@ export default function MessageInput({ onSendMessage, isSending }: MessageInputP
         <TooltipProvider delayDuration={300}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="flex items-center space-x-2 cursor-pointer">
+              <div
+                className={cn(
+                  "flex items-center space-x-2 cursor-pointer transition-all duration-300 rounded-lg p-1",
+                  shouldAnonymize && "shadow-[0_0_15px_-3px_hsl(var(--accent))] animate-pulse"
+                )}
+              >
                 <Switch
                   id="anonymize-switch"
                   checked={shouldAnonymize}
@@ -61,7 +67,13 @@ export default function MessageInput({ onSendMessage, isSending }: MessageInputP
                   disabled={isSending}
                   aria-label="Toggle AI Anonymizer"
                 />
-                <Label htmlFor="anonymize-switch" className="flex items-center gap-1.5 text-muted-foreground cursor-pointer">
+                <Label
+                  htmlFor="anonymize-switch"
+                  className={cn(
+                    "flex items-center gap-1.5 text-muted-foreground cursor-pointer transition-colors",
+                    shouldAnonymize && "text-accent"
+                  )}
+                >
                   <Sparkles className="h-4 w-4 text-accent" />
                   <span>AI Anonymizer</span>
                 </Label>
