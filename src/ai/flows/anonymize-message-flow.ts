@@ -1,6 +1,6 @@
+'use server';
 /**
- * @fileoverview This file defines the Genkit flow for anonymizing messages.
- * It is NOT a server action and should not be imported by client components.
+ * @fileoverview This file defines the Genkit flow and server action for anonymizing messages.
  */
 
 import { ai } from '@/ai/genkit';
@@ -42,7 +42,7 @@ Your JSON Output: { "anonymizedMessage": "I'm running about 15 minutes late.", "
 });
 
 // Define the Genkit flow that orchestrates the AI call.
-export const anonymizeMessageFlow = ai.defineFlow(
+const anonymizeMessageFlow = ai.defineFlow(
   {
     name: 'anonymizeMessageFlow',
     inputSchema: AnonymizeMessageInputSchema,
@@ -74,4 +74,22 @@ export const anonymizeMessageFlow = ai.defineFlow(
   }
 );
 
-    
+
+/**
+ * The server action that client components will call.
+ * This wraps the Genkit flow and handles potential errors.
+ */
+export async function anonymizeMessage(
+  input: AnonymizeMessageInput
+): Promise<AnonymizeMessageOutput> {
+  try {
+    return await anonymizeMessageFlow(input);
+  } catch (error) {
+    console.error('Anonymization action failed:', error);
+    // On failure, return the original message to avoid blocking the user.
+    return {
+      anonymizedMessage: input.message,
+      anonymized: false,
+    };
+  }
+}
