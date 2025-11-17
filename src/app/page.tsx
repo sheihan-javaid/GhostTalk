@@ -258,7 +258,7 @@ export default function Home() {
                   <span className="text-2xl font-headline">Support Us</span>
                 </CardTitle>
                 <CardDescription>
-                  If you enjoy GhostTalk, consider supporting its development anonymously.
+                  While this app is free, running the AI and backend services can have costs. Your support helps keep it alive.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -308,4 +308,5 @@ export default function Home() {
   );
 }
 
+    
     
