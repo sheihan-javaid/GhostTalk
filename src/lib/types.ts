@@ -1,4 +1,5 @@
 import { FieldValue } from 'firebase/firestore';
+import { z } from 'zod';
 
 // Represents the decrypted, in-app message object
 export interface Message {
@@ -32,11 +33,27 @@ export interface UiSettings {
 }
 
 // AI Flow Types
-export interface AnonymizeMessageInput {
-  message: string;
-}
 
-export interface AnonymizeMessageOutput {
-  anonymizedMessage: string;
-  anonymized: boolean;
-}
+// Define the schema for the input, which is just the message text.
+export const AnonymizeMessageInputSchema = z.object({
+  message: z.string().describe('The text of the message to be anonymized.'),
+});
+export type AnonymizeMessageInput = z.infer<typeof AnonymizeMessageInputSchema>;
+
+
+// Define the schema for the structured output we expect from the AI.
+export const AnonymizeMessageOutputSchema = z.object({
+  anonymizedMessage: z
+    .string()
+    .describe(
+      'The processed message. This will be the original message if no PII is found, or the altered message if PII was removed.'
+    ),
+  anonymized: z
+    .boolean()
+    .describe(
+      'A boolean flag indicating whether the message was altered. True if PII was detected and removed, false otherwise.'
+    ),
+});
+export type AnonymizeMessageOutput = z.infer<typeof AnonymizeMessageOutputSchema>;
+
+    

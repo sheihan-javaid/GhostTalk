@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { anonymizeMessage } from '@/ai/flows/anonymize-message-metadata';
+import { anonymizeMessage } from '@/ai/flows/anonymize-message-action';
 import { generateAnonymousName } from '@/ai/flows/generate-anonymous-name';
 import type { Message, UiSettings, ChatMessage, AnonymizeMessageInput } from '@/lib/types';
 import MessageList from './message-list';
@@ -378,3 +378,5 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     </div>
   );
 }
+
+    
