@@ -14,7 +14,7 @@ export default function GhostAiChat() {
     const [history, setHistory] = useState<any[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const scrollAreaViewport = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         async function fetchGreeting() {
@@ -32,8 +32,8 @@ export default function GhostAiChat() {
     }, []);
 
     useEffect(() => {
-        if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+        if (scrollAreaViewport.current) {
+            scrollAreaViewport.current.scrollTo({ top: scrollAreaViewport.current.scrollHeight, behavior: 'smooth' });
         }
     }, [history, isLoading]);
 
@@ -71,7 +71,7 @@ export default function GhostAiChat() {
                 <h1 className="text-2xl font-bold flex items-center justify-center gap-2 font-headline"><Bot className="h-8 w-8 text-accent"/> Ghost AI</h1>
                 <p className="text-muted-foreground text-sm">Your private, ephemeral AI assistant.</p>
             </div>
-            <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+            <ScrollArea className="flex-1 p-4" viewportRef={scrollAreaViewport}>
                 <div className="space-y-6">
                     {history.map((msg, index) => (
                         <div 
@@ -121,7 +121,7 @@ export default function GhostAiChat() {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend()}
-                        placeholder="Ask GhostAI anything..."
+                        placeholder="Whisper to the void..."
                         disabled={isLoading}
                         className="flex-1"
                     />
