@@ -44,7 +44,21 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [userName, setUserName] = useState('');
-  const [settings, setSettings] = useState<UiSettings>(defaultSettings);
+  
+  // Load settings from localStorage or use defaults
+  const [settings, setSettings] = useState<UiSettings>(() => {
+    if (typeof window === 'undefined') {
+        return defaultSettings;
+    }
+    try {
+        const savedSettings = localStorage.getItem('ghosttalk-settings');
+        return savedSettings ? JSON.parse(savedSettings) : defaultSettings;
+    } catch (error) {
+        console.warn('Could not parse settings from localStorage', error);
+        return defaultSettings;
+    }
+  });
+
   const [isSending, setIsSending] = useState(false);
   const [currentRoomId, setCurrentRoomId] = useState(initialRoomId);
   const [isPublicRoom, setIsPublicRoom] = useState(false);
@@ -361,8 +375,17 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     }
   }, [firestore, currentRoomId, user, toast]);
   
+  // Save settings to localStorage whenever they change
   const handleSettingsChange = (newSettings: Partial<UiSettings>) => {
-    setSettings(prev => ({...prev, ...newSettings}));
+    setSettings(prev => {
+        const updatedSettings = {...prev, ...newSettings};
+        try {
+            localStorage.setItem('ghosttalk-settings', JSON.stringify(updatedSettings));
+        } catch (error) {
+            console.warn('Could not save settings to localStorage', error);
+        }
+        return updatedSettings;
+    });
   }
 
   useEffect(() => {
@@ -430,4 +453,3 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     </div>
   );
 }
-
