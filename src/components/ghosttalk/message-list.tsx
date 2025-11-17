@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from 'react';
 import type { Message } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -102,7 +103,7 @@ function MessageItem({ message, isCurrentUser, onDeleteMessage, onEditMessage }:
                 </AvatarFallback>
             </Avatar>
         )}
-        <span className="text-xs text-muted-foreground">{!isCurrentUser ? message.username : 'You'}</span>
+        <span className="text-xs text-muted-foreground">{message.username}</span>
       </div>
       {messageContent}
       <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
