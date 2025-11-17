@@ -29,7 +29,7 @@ function MessageItem({ message, isCurrentUser, onDeleteMessage, onEditMessage }:
   
   const formattedTime = message.timestamp instanceof Timestamp 
     ? message.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    : '...';
 
   const handleSaveEdit = () => {
     if (editText.trim() && editText !== message.text) {
@@ -73,7 +73,7 @@ function MessageItem({ message, isCurrentUser, onDeleteMessage, onEditMessage }:
         />
       )}
       {message.text && <p className="text-sm break-words">{message.text}</p>}
-      {isCurrentUser && !message.media && ( // Editing only allowed for text-only messages for now
+      {isCurrentUser && ( 
         <div className="absolute top-0 right-0 m-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -86,23 +86,6 @@ function MessageItem({ message, isCurrentUser, onDeleteMessage, onEditMessage }:
                         <Pencil className="mr-2 h-4 w-4" />
                         <span>Edit</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => onDeleteMessage(message.id)} className="text-red-500">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        <span>Delete</span>
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </div>
-      )}
-       {isCurrentUser && message.media && ( // Separate simpler menu for media messages
-        <div className="absolute top-0 right-0 m-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6">
-                        <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
                     <DropdownMenuItem onSelect={() => onDeleteMessage(message.id)} className="text-red-500">
                         <Trash2 className="mr-2 h-4 w-4" />
                         <span>Delete</span>

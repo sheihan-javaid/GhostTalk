@@ -71,7 +71,9 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
         }
       }
     };
-    if(!isUserLoading) initUser();
+    if(!isUserLoading) {
+      initUser();
+    }
   }, [user, firestore, isUserLoading]);
   
   // Step 2: Resolve dynamic lobby rooms & join room.
@@ -139,7 +141,7 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
 
       const publicKeyJwk = await crypto.exportMyPublicKey();
       if (publicKeyJwk) {
-          await updateDocumentNonBlocking(roomDocRef, {
+          await updateDoc(roomDocRef, {
               [`participants.${user.uid}`]: {
                   publicKey: publicKeyJwk,
                   name: userName,
@@ -167,101 +169,59 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
   const { data: firestoreMessages } = useCollection<Omit<ChatMessage, 'id' | 'text'>>(messagesQuery);
   
   // Step 4: Process and decrypt messages, and handle automatic deletion.
-  const decryptedMessages = useMemo(() => {
-    if (!firestoreMessages || !user) return new Map<string, Message>();
-
-    // This map will store the results so we don't re-decrypt
-    const newMessages = new Map<string, Message>();
-    const promises: Promise<void>[] = [];
-
-    for (const msg of firestoreMessages) {
-        const concreteMsg = msg as ChatMessage & {id: string};
-        
-        // Decrypt only if not already in the cache
-        if (!messages.find(m => m.id === concreteMsg.id)) {
-            const promise = (async () => {
-                let decryptedPayload: MessagePayload;
-                try {
-                    const userPayload = concreteMsg.payloads?.[user.uid];
-                    if (userPayload) {
-                        const decryptedString = await crypto.decrypt(userPayload);
-                        decryptedPayload = JSON.parse(decryptedString);
-                    } else {
-                        return; // Not intended for this user
-                    }
-                } catch (error) {
-                    console.warn("Could not decrypt or parse message payload:", error, "Message ID:", concreteMsg.id);
-                    return;
-                }
-                
-                const processedMessage: Message = {
-                    id: concreteMsg.id,
-                    text: decryptedPayload.text,
-                    media: decryptedPayload.media,
-                    userId: concreteMsg.senderId,
-                    username: concreteMsg.senderName,
-                    timestamp: concreteMsg.timestamp,
-                    anonymized: !!concreteMsg.anonymized,
-                    isEdited: !!concreteMsg.isEdited,
-                };
-                newMessages.set(concreteMsg.id, processedMessage);
-            })();
-            promises.push(promise);
-        }
+  useEffect(() => {
+    if (!firestoreMessages || !user || !firestore || !currentRoomId) {
+      return;
     }
-    
-    // We don't use the result of Promise.all directly, just wait for it.
-    // The main benefit is populating newMessages.
-    // For a real app, we might handle promise rejections here.
-    Promise.all(promises);
 
-    // Combine old messages with newly decrypted ones
-    const combined = new Map<string, Message>();
-    messages.forEach(msg => combined.set(msg.id, msg));
-    newMessages.forEach((value, key) => combined.set(key, value));
+    const processMessages = async () => {
+      const now = Date.now();
+      const expirySeconds = settings.messageExpiry;
 
-    return combined;
+      const decrypted: Message[] = [];
 
-}, [firestoreMessages, user, messages]); // `messages` is a dependency to access the old cache
+      for (const msg of firestoreMessages) {
+        const concreteMsg = msg as ChatMessage & { id: string };
 
-useEffect(() => {
-    if (!user || !firestore || !currentRoomId) return;
-
-    const now = Date.now();
-    const expirySeconds = settings.messageExpiry;
-
-    const finalMessages: Message[] = [];
-    let needsUpdate = false;
-
-    decryptedMessages.forEach((msg, id) => {
-        if (expirySeconds > 0 && msg.timestamp instanceof Timestamp) {
-            const messageTime = msg.timestamp.toMillis();
+        // Handle automatic deletion by sender
+        if (expirySeconds > 0 && concreteMsg.senderId === user.uid && concreteMsg.timestamp instanceof Timestamp) {
+            const messageTime = concreteMsg.timestamp.toMillis();
             if (now - messageTime > expirySeconds * 1000) {
-                // Check if the current user is the sender to delete from Firestore
-                if (msg.userId === user.uid) {
-                    const messageRef = doc(firestore, 'chatRooms', currentRoomId, 'messages', id);
-                    deleteDocumentNonBlocking(messageRef);
-                }
-                needsUpdate = true;
-                return; // Skip adding to final list
+                const messageRef = doc(firestore, 'chatRooms', currentRoomId, 'messages', concreteMsg.id);
+                deleteDocumentNonBlocking(messageRef);
+                continue; // Skip processing this message further as it's being deleted
             }
         }
-        finalMessages.push(msg);
-    });
+        
+        let decryptedPayload: MessagePayload;
+        try {
+          const userPayload = concreteMsg.payloads?.[user.uid];
+          if (userPayload) {
+            const decryptedString = await crypto.decrypt(userPayload);
+            decryptedPayload = JSON.parse(decryptedString);
 
-    // Sort messages by timestamp before setting state
-    finalMessages.sort((a, b) => {
-        const timeA = a.timestamp instanceof Timestamp ? a.timestamp.toMillis() : 0;
-        const timeB = b.timestamp instanceof Timestamp ? b.timestamp.toMillis() : 0;
-        return timeA - timeB;
-    });
+            const processedMessage: Message = {
+                id: concreteMsg.id,
+                text: decryptedPayload.text,
+                media: decryptedPayload.media,
+                userId: concreteMsg.senderId,
+                username: concreteMsg.senderName,
+                timestamp: concreteMsg.timestamp,
+                anonymized: !!concreteMsg.anonymized,
+                isEdited: !!concreteMsg.isEdited,
+            };
+            decrypted.push(processedMessage);
+          }
+        } catch (error) {
+          console.warn("Could not decrypt or parse message payload:", error, "Message ID:", concreteMsg.id);
+          // Don't add corrupted messages to the list
+        }
+      }
+      setMessages(decrypted);
+    };
 
-    // Only update state if the final list is different from the current one
-    if (needsUpdate || finalMessages.length !== messages.length || finalMessages.some((m, i) => m.id !== messages[i]?.id)) {
-        setMessages(finalMessages);
-    }
-
-}, [decryptedMessages, settings.messageExpiry, user, firestore, currentRoomId, messages]);
+    processMessages();
+  }, [firestoreMessages, user, firestore, currentRoomId, settings.messageExpiry]);
 
 
   const handleSendMessage = useCallback(async (rawText: string, shouldAnonymize: boolean, mediaFile?: File) => {
@@ -361,7 +321,20 @@ useEffect(() => {
         const originalPayloads = messageSnap.data()?.payloads || {};
         const recipients = Object.keys(originalPayloads);
 
-        const payload: MessagePayload = { text: newText };
+        // Find the original media payload, if any
+        let mediaUrl: string | undefined = undefined;
+        try {
+          const anyUserPayload = Object.values(originalPayloads)[0] as string;
+          if(anyUserPayload) {
+              const decryptedString = await crypto.decrypt(anyUserPayload);
+              const originalFullPayload = JSON.parse(decryptedString) as MessagePayload;
+              mediaUrl = originalFullPayload.media;
+          }
+        } catch (e) {
+            console.warn("Could not decrypt original payload to preserve media on edit.", e);
+        }
+        
+        const payload: MessagePayload = { text: newText, media: mediaUrl };
         const payloadString = JSON.stringify(payload);
 
         for (const uid of recipients) {
@@ -427,7 +400,7 @@ useEffect(() => {
 
   }, [settings]);
 
-  if (isUserLoading || isLoading || !userName) {
+  if (isUserLoading || isLoading || !userName || !isParticipant) {
     return <LoadingGhost />;
   }
 
@@ -458,4 +431,3 @@ useEffect(() => {
   );
 }
 
-    
