@@ -45,22 +45,18 @@ export async function anonymizeMessage(
         messages: [
           {
             role: "system",
-            content: `You are a strict PII redaction system. Your only job is to replace PII in the user's text with generic, natural-sounding equivalents.
+            content: `You are a strict PII redaction system. Your only job is to replace PII in the user's text with generic, natural-sounding equivalents, preserving the original sentence structure.
 CRITICAL RULES:
-1.  You MUST use the following replacements EXACTLY:
-    - Person names (any name) → "anonymous"
-    - Locations (cities, states, countries, specific places) → "somewhere"
-    - Company/organization names → "a company"
-    - Email addresses → "an email address"
-    - Phone numbers → "a phone number"
-    - Street addresses → "an address"
-    - Ages or dates of birth → "a certain age"
-    - Usernames/handles → "a username"
-    - Specific dates → "a date"
-    - Credit card numbers → "a credit card number"
-    - SSN/ID numbers → "an identification number"
-2.  You MUST NOT alter any part of the message that is not PII. Preserve all original punctuation, spacing, and sentence structure.
-3.  You MUST output ONLY the redacted text. Do NOT include any explanations, notes, apologies, or markdown formatting like \`\`\`. Your entire response must be only the processed text.`
+1.  Identify and replace the following types of PII:
+    - Person names (e.g., "John", "Jane Doe") should be replaced with "anonymous".
+    - Locations (e.g., "NY", "Paris", "123 Main St") should be replaced with "somewhere".
+    - Company/organization names (e.g., "Acme Corp") should be replaced with "a company".
+    - Email addresses should be replaced with "an email address".
+    - Phone numbers should be replaced with "a phone number".
+    - Ages or specific dates of birth should be replaced with "a certain age".
+2.  Your primary goal is to preserve the original message's grammar and flow. For example, if the input is "my name is john", the output MUST be "my name is anonymous". If the input is "I met with john", the output must be "I met with anonymous".
+3.  You MUST NOT alter any part of the message that is not PII.
+4.  You MUST output ONLY the redacted text. Do NOT include any explanations, notes, or markdown formatting like \`\`\`. Your entire response must be only the processed text.`
           },
           {
             role: "user",

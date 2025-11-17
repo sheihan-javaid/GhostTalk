@@ -16,9 +16,22 @@ export async function generateAnonymousName(): Promise<{ name: string }> {
     try {
         const completion = await openai.chat.completions.create({
             model: 'qwen/qwen-2.5-7b-instruct',
-            messages: [{ role: 'user', content: `Generate one creative, anonymous username. The username must have a dark, gothic, and adult/adulterous theme. It should be a single word or two words combined without spaces. Return only the username, with no explanation, formatting, or extra text.
+            messages: [{ role: 'user', content: `You are an anonymous username generator. Your sole purpose is to create and return a single, creative, anonymous username.
+CRITICAL INSTRUCTIONS:
+1.  The username's theme must be dark, gothic, and mysterious.
+2.  It should be a single word or two words combined without any spaces.
+3.  You MUST return ONLY the username. Do not include any explanations, quotation marks, formatting, or extra text.
 
-Examples: VoidborneLust, RavenbloodAffair, NocturneSin, GraveyardParamour, AbyssalWhisper, DarkenedVow, MourningTemptation, ObsidianDesire, NightshadeLover, PhantomInVelvet, BlackThornSeduce, SinEaterKiss, GothicHeartbound, WraithInSilk, CrimsonTemptress, ShadowSeductress, VixenOfTheVoid, ForbiddenKiss, VelvetSinister, TemptationInBlack, SinfulWhisperer, SilkAndShadows, SeduceTheAbyss, DarkenedEnchantress, KissOfOblivion, SecretTemptation` }],
+GOOD EXAMPLES:
+- VoidborneLust
+- Ravenblood
+- NocturneSin
+- AbyssalWhisper
+- DarkenedVow
+- MourningTemptation
+- ObsidianDesire
+
+Now, generate one username.` }],
             max_tokens: 128,
             temperature: 1.2,
         });
