@@ -16,7 +16,7 @@ export async function generateKeyPair(): Promise<CryptoKeyPair> {
   const keyPair = await crypto.subtle.generateKey(
     { name: 'X25519' },
     true, // Can be exported
-    ['deriveKey']
+    ['deriveKey'] // Private key can be used to derive secret keys
   );
   return keyPair;
 }
@@ -70,7 +70,7 @@ export async function getMyPublicKey(): Promise<CryptoKey | null> {
     parsed.publicKey,
     { name: 'X25519' },
     true,
-    []
+    [] // Public keys for ECDH have no key usages
   );
   
   return publicKey;
@@ -100,7 +100,7 @@ export async function importPublicKey(jwk: JsonWebKey): Promise<CryptoKey> {
     jwk,
     { name: 'X25519' },
     true,
-    [] // A public key for X25519 is not used for derivation itself, so usages can be empty.
+    [] // Public keys for ECDH have no key usages
   );
   
   return publicKey;
@@ -113,12 +113,10 @@ export async function initializeKeyPair(): Promise<void> {
   try {
     const existing = localStorage.getItem('myKeyPair');
     if (existing) {
-        // Optional: Validate the existing key pair format
         JSON.parse(existing);
         return;
     }
   } catch (e) {
-      // Corrupted key in storage, will proceed to generate a new one
       console.warn("Could not parse existing key pair, generating new one.", e);
   }
   
@@ -136,16 +134,12 @@ interface EncryptedPackage {
   ct: string; // Base64
 }
 
-/**
- * Helper: ArrayBuffer -> Base64
- */
+/** Helper: ArrayBuffer -> Base64 */
 function ab2b64(buf: ArrayBuffer): string {
   return Buffer.from(buf).toString('base64');
 }
 
-/**
- * Helper: Base64 -> ArrayBuffer
- */
+/** Helper: Base64 -> ArrayBuffer */
 function b642ab(b64: string): ArrayBuffer {
   const buf = Buffer.from(b64, 'base64');
   return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
@@ -164,17 +158,15 @@ export async function encrypt(
   const enc = new TextEncoder();
   const encodedText = enc.encode(text);
   
-  const ephemeralKeyPair = await crypto.subtle.generateKey(
-    { name: 'X25519' },
-    true,
-    ['deriveKey']
-  );
+  // Generate a temporary key pair for this message only
+  const ephemeralKeyPair = await generateKeyPair();
   
+  // Derive a shared secret using our ephemeral private key and the recipient's public key
   const sharedSecret = await crypto.subtle.deriveKey(
     { name: 'ECDH', public: recipientPublicKey },
     ephemeralKeyPair.privateKey,
     { name: 'AES-GCM', length: 256 },
-    false, // Not extractable
+    false, // The derived key is not exportable
     ['encrypt']
   );
   
@@ -216,37 +208,23 @@ export async function decrypt(encryptedPackageB64: string): Promise<string> {
     throw new Error('Private key not found. Please initialize your key pair first.');
   }
   
-  let encryptedPackageString: string;
-  try {
-    encryptedPackageString = Buffer.from(encryptedPackageB64, 'base64').toString('utf-8');
-  } catch (err) {
-    throw new Error('Failed to decode Base64 package. Data may be corrupted.');
-  }
-  
   let packaged: EncryptedPackage;
   try {
+    const encryptedPackageString = Buffer.from(encryptedPackageB64, 'base64').toString('utf-8');
     packaged = JSON.parse(encryptedPackageString);
   } catch (err) {
-    console.error('Failed to parse JSON. Raw data:', encryptedPackageString.substring(0, 100));
-    throw new Error('Failed to parse encrypted package JSON. Data may be corrupted or encrypted for wrong key.');
+    console.error('Failed to parse encrypted package JSON. Data may be corrupted or not valid JSON.');
+    throw new Error('Failed to parse encrypted package. It may be corrupted.');
   }
   
   const { ephemPubKey, iv, ct } = packaged;
-  if (!ephemPubKey || typeof ephemPubKey !== 'object' || !ephemPubKey.kty || !iv || !ct) {
-    throw new Error('Invalid package structure: missing or malformed ephemPubKey, iv, or ct.');
+  if (!ephemPubKey || !ephemPubKey.kty || !iv || !ct) {
+    throw new Error('Invalid package structure: missing ephemPubKey, iv, or ct.');
   }
-  
-  let ivAb: ArrayBuffer;
-  let ciphertextAb: ArrayBuffer;
-  try {
-    ivAb = b642ab(iv);
-    ciphertextAb = b642ab(ct);
-  } catch (err) {
-    throw new Error('Failed to decode IV or ciphertext from Base64. Data may be corrupted.');
-  }
-  
+
   const senderEphemeralPublicKey = await importPublicKey(ephemPubKey);
   
+  // Derive the same shared secret using the sender's ephemeral public key and our private key
   const sharedSecret = await crypto.subtle.deriveKey(
     { name: 'ECDH', public: senderEphemeralPublicKey },
     myPrivateKey,
@@ -257,15 +235,15 @@ export async function decrypt(encryptedPackageB64: string): Promise<string> {
   
   try {
     const decryptedAb = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: ivAb },
+      { name: 'AES-GCM', iv: b642ab(iv) },
       sharedSecret,
-      ciphertextAb
+      b642ab(ct)
     );
     
     const dec = new TextDecoder();
     return dec.decode(decryptedAb);
   } catch (err) {
-    console.error('Decryption failed:', err);
+    console.error('Decryption failed. This is often due to an incorrect key or corrupted data.', err);
     throw new Error('Decryption failed. The message may be corrupted or intended for a different recipient.');
   }
 }
