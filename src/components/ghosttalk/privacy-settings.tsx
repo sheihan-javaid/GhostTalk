@@ -7,8 +7,6 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import type { UiSettings } from "@/lib/types";
 import React from "react";
 
@@ -39,17 +37,6 @@ export default function PrivacySettings({ isOpen, onOpenChange, onSettingsChange
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-6 py-4 max-h-[70vh] overflow-y-auto pr-2">
-
-            <div className="flex items-center justify-between">
-                <Label className="font-semibold" htmlFor="show-username">Show Usernames</Label>
-                <Switch
-                id="show-username"
-                checked={currentSettings.showUsername}
-                onCheckedChange={(checked) => onSettingsChange({ showUsername: checked })}
-                />
-            </div>
-
-            <Separator />
             
             <div className="space-y-3">
                 <Label className="font-semibold">Automatic Message Deletion</Label>

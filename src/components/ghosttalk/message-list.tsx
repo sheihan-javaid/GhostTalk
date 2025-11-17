@@ -12,12 +12,11 @@ import { Textarea } from '../ui/textarea';
 interface MessageListProps {
   messages: Message[];
   currentUserId: string;
-  showUsername: boolean;
   onDeleteMessage: (messageId: string) => void;
   onEditMessage: (messageId: string, newText: string) => void;
 }
 
-function MessageItem({ message, isCurrentUser, showUsername, onDeleteMessage, onEditMessage }: { message: Message, isCurrentUser: boolean, showUsername: boolean, onDeleteMessage: (id: string) => void, onEditMessage: (id: string, text: string) => void }) {
+function MessageItem({ message, isCurrentUser, onDeleteMessage, onEditMessage }: { message: Message, isCurrentUser: boolean, onDeleteMessage: (id: string) => void, onEditMessage: (id: string, text: string) => void }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(message.text);
   
@@ -95,18 +94,16 @@ function MessageItem({ message, isCurrentUser, showUsername, onDeleteMessage, on
         'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-4 duration-500'
       )}
     >
-      {showUsername && (
-        <div className="flex items-center gap-2 px-1">
-          {!isCurrentUser && (
-              <Avatar className="h-6 w-6">
-                  <AvatarFallback className="bg-muted text-muted-foreground text-xs">
-                      <User className="h-4 w-4"/>
-                  </AvatarFallback>
-              </Avatar>
-          )}
-          <span className="text-xs text-muted-foreground">{!isCurrentUser ? message.username : 'You'}</span>
-        </div>
-      )}
+      <div className="flex items-center gap-2 px-1">
+        {!isCurrentUser && (
+            <Avatar className="h-6 w-6">
+                <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+                    <User className="h-4 w-4"/>
+                </AvatarFallback>
+            </Avatar>
+        )}
+        <span className="text-xs text-muted-foreground">{!isCurrentUser ? message.username : 'You'}</span>
+      </div>
       {messageContent}
       <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
         <span>{formattedTime}</span>
@@ -129,7 +126,7 @@ function MessageItem({ message, isCurrentUser, showUsername, onDeleteMessage, on
 }
 
 
-export default function MessageList({ messages, currentUserId, showUsername, onDeleteMessage, onEditMessage }: MessageListProps) {
+export default function MessageList({ messages, currentUserId, onDeleteMessage, onEditMessage }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -150,7 +147,6 @@ export default function MessageList({ messages, currentUserId, showUsername, onD
           key={message.id}
           message={message}
           isCurrentUser={message.userId === currentUserId}
-          showUsername={showUsername}
           onDeleteMessage={onDeleteMessage}
           onEditMessage={onEditMessage}
         />

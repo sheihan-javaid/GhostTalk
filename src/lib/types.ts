@@ -28,7 +28,6 @@ export interface UiSettings {
     themeColor: 'default' | 'fire' | 'ice' | 'forest' | 'cyberpunk' | 'noir';
     fontSize: 'small' | 'medium' | 'large';
     bubbleStyle: 'rounded' | 'sharp';
-    showUsername: boolean;
     animationIntensity: 'low' | 'medium' | 'off';
 }
 

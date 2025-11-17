@@ -15,9 +15,7 @@ export async function generateAnonymousName(): Promise<{ name: string }> {
     try {
         const completion = await openai.chat.completions.create({
             model: 'mistralai/mistral-7b-instruct:free',
-            messages: [{ role: 'user', content: `Generate one creative, anonymous username. The username should be dark, brutal, or have adult humor themes.
-Return only the username, with no explanation or extra text.
-Example: VoidGazer` }],
+            messages: [{ role: 'user', content: `Generate one creative, anonymous username. The username should be dark, brutal, or have adult humor themes. Return only the username, with no explanation or extra text. Examples: ShadowLurker, GrimJester, SerpentWhisper, CrimsonPhantom` }],
             max_tokens: 20,
             temperature: 1.2,
         });
