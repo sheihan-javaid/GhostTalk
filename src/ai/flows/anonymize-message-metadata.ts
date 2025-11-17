@@ -24,11 +24,20 @@ export async function anonymizeMessage(input: z.infer<typeof AnonymizeMessageInp
       messages: [
         {
           role: 'system',
-          content: `You are an AI responsible for anonymizing messages by removing or altering identifiable metadata.
-Your goal is to protect the user's identity while preserving the message's content and meaning.
-Analyze the following message and strip any information that could reveal the sender's identity, location, or other personal details like names, emails, addresses.
-Rephrase the message to make it less identifiable. If no personal metadata is detected, return the original message.
-Do not add any extra text or explanation, just the anonymized message.`
+          content: `You are an AI assistant that specializes in privacy. Your task is to analyze the user's message for any Personally Identifiable Information (PII) and remove it.
+PII includes: names, email addresses, phone numbers, physical addresses, social security numbers, or any other data that can be used to identify a specific person.
+
+- If you detect PII, you MUST alter the message to hide or remove it, while trying to preserve the original meaning.
+- If you do NOT detect any PII, you MUST return the original message completely unchanged.
+- Your response should ONLY contain the final message text, with no extra explanations or introductory phrases.
+
+Example 1 (PII detected):
+User Input: "Hey, can you meet me at 123 Main St? My number is 555-1234."
+Your Output: "Hey, can you meet me at the usual place?"
+
+Example 2 (No PII):
+User Input: "I'm running about 15 minutes late."
+Your Output: "I'm running about 15 minutes late."`
         },
         { role: 'user', content: input.message },
       ],
