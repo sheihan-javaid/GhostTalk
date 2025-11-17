@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -76,7 +77,6 @@ export default function ConfessionWall() {
     setIsPosting(true);
     
     try {
-      // Moderation
       const moderationResult = await moderateConfession(newConfession);
       if (!moderationResult.isAppropriate) {
         toast({ variant: 'destructive', title: 'Inappropriate Content', description: moderationResult.reason || 'This content cannot be posted.' });
@@ -99,12 +99,25 @@ export default function ConfessionWall() {
           confessionData.media = mediaDataUrl;
       }
       
-      await addDocumentNonBlocking(collection(firestore, 'confessions'), confessionData);
+      // Use non-blocking write and reset UI immediately
+      addDocumentNonBlocking(collection(firestore, 'confessions'), confessionData)
+        .then(() => {
+          // Success is handled silently, UI is already reset
+        })
+        .catch(() => {
+          toast({ variant: 'destructive', title: 'Error', description: 'Could not post confession. It may have been blocked or a network error occurred.' });
+        })
+        .finally(() => {
+          // Re-enable form after attempt, regardless of outcome
+          setIsPosting(false);
+        });
+
+      // Optimistically reset UI
       setNewConfession('');
       removeMedia();
+
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Could not post confession.' });
-    } finally {
       setIsPosting(false);
     }
   };
@@ -132,6 +145,7 @@ export default function ConfessionWall() {
             value={newConfession}
             onChange={(e) => setNewConfession(e.target.value)}
             rows={3}
+            disabled={isPosting}
           />
           {mediaPreview && (
             <div className="relative w-full max-w-xs mx-auto">
@@ -142,14 +156,14 @@ export default function ConfessionWall() {
                 height={400}
                 className="rounded-md object-contain max-h-64 w-auto"
               />
-              <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={removeMedia}>
+              <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={removeMedia} disabled={isPosting}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
           )}
           <div className="flex justify-between items-center">
             <label htmlFor="file-input" className="cursor-pointer">
-              <Button asChild variant="ghost" className="text-muted-foreground">
+              <Button asChild variant="ghost" className="text-muted-foreground" disabled={isPosting}>
                 <div>
                   <Paperclip className="h-5 w-5"/>
                   <input id="file-input" type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
@@ -202,3 +216,5 @@ export default function ConfessionWall() {
     </div>
   );
 }
+
+    

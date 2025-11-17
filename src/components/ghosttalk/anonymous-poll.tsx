@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -53,7 +54,7 @@ export default function AnonymousPoll() {
     setOptions(newOptions);
   };
 
-  const createPoll = async () => {
+  const createPoll = () => {
     if (!user || !firestore || !question.trim() || options.some(o => !o.trim())) {
       toast({ variant: 'destructive', title: 'Error', description: 'Please fill out the question and all options.' });
       return;
@@ -71,8 +72,6 @@ export default function AnonymousPoll() {
 
     addDocumentNonBlocking(collection(firestore, 'polls'), newPoll)
         .then(() => {
-            setQuestion('');
-            setOptions(['', '']);
             toast({ title: 'Success!', description: 'Your poll has been created.' });
         })
         .catch(() => {
@@ -81,6 +80,10 @@ export default function AnonymousPoll() {
         .finally(() => {
             setIsCreating(false);
         });
+    
+    // Optimistically clear the form
+    setQuestion('');
+    setOptions(['', '']);
   };
   
   const handleVote = (pollId: string, optionIndex: number) => {
@@ -113,6 +116,7 @@ export default function AnonymousPoll() {
             placeholder="What's your question?"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
+            disabled={isCreating}
           />
           <div className="space-y-2">
             {options.map((option, index) => (
@@ -121,9 +125,10 @@ export default function AnonymousPoll() {
                   placeholder={`Option ${index + 1}`}
                   value={option}
                   onChange={(e) => handleOptionChange(index, e.target.value)}
+                  disabled={isCreating}
                 />
                 {options.length > 2 && (
-                  <Button variant="ghost" size="icon" onClick={() => removeOption(index)}>
+                  <Button variant="ghost" size="icon" onClick={() => removeOption(index)} disabled={isCreating}>
                     <X className="h-4 w-4" />
                   </Button>
                 )}
@@ -131,7 +136,7 @@ export default function AnonymousPoll() {
             ))}
           </div>
           <div className="flex justify-between">
-            <Button variant="outline" onClick={addOption} disabled={options.length >= 5}>
+            <Button variant="outline" onClick={addOption} disabled={options.length >= 5 || isCreating}>
               <Plus className="h-4 w-4 mr-2" /> Add Option
             </Button>
             <Button onClick={createPoll} disabled={isCreating}>
@@ -186,3 +191,5 @@ export default function AnonymousPoll() {
     </div>
   );
 }
+
+    

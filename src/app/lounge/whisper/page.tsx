@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
-import { collection, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, serverTimestamp, doc } from 'firebase/firestore';
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Copy, Check, Link as LinkIcon, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import * as crypto from '@/lib/crypto';
+import { generateAnonymousName } from '@/ai/flows/generate-anonymous-name';
 
 
 export default function WhisperPage() {
@@ -27,36 +28,35 @@ export default function WhisperPage() {
     if (!user || !firestore) return;
     setIsCreating(true);
 
-    const newRoomData = {
-      name: `Whisper Room - ${Date.now()}`,
-      createdAt: serverTimestamp(),
-      region: 'global',
-      isPublic: false,
-      isWhisper: true,
-      participants: {},
-    };
-
     try {
-      const docRef = await addDocumentNonBlocking(collection(firestore, 'chatRooms'), newRoomData);
-      if (docRef) {
-        const publicKeyJwk = await crypto.exportMyPublicKey();
-        const userDoc = await getDoc(doc(firestore, 'users', user.uid));
-        const userName = userDoc.data()?.anonymousName || 'Anonymous';
-
-        if (publicKeyJwk) {
-          updateDocumentNonBlocking(docRef, {
-            [`participants.${user.uid}`]: {
-              publicKey: publicKeyJwk,
-              name: userName,
-            },
-          });
-        }
+        const [docRef, aiName, publicKeyJwk] = await Promise.all([
+            addDocumentNonBlocking(collection(firestore, 'chatRooms'), {
+                name: `Whisper Room - ${Date.now()}`,
+                createdAt: serverTimestamp(),
+                region: 'global',
+                isPublic: false,
+                isWhisper: true,
+                participants: {},
+            }),
+            generateAnonymousName(),
+            crypto.exportMyPublicKey()
+        ]);
         
-        const generatedLink = `${window.location.origin}/chat/${docRef.id}`;
-        setWhisperLink(generatedLink);
-        setIsRedirecting(true);
-        router.push(`/chat/${docRef.id}`);
-      }
+        if (docRef && aiName && publicKeyJwk) {
+            updateDocumentNonBlocking(docRef, {
+                [`participants.${user.uid}`]: {
+                publicKey: publicKeyJwk,
+                name: aiName.name || 'Anonymous',
+                },
+            });
+            
+            const generatedLink = `${window.location.origin}/chat/${docRef.id}`;
+            setWhisperLink(generatedLink);
+            setIsRedirecting(true);
+            router.push(`/chat/${docRef.id}`);
+        } else {
+             throw new Error("Failed to gather all required resources to create the room.");
+        }
     } catch (error) {
       console.error("Whisper room creation error:", error);
       toast({
@@ -131,5 +131,7 @@ export default function WhisperPage() {
     </Card>
   );
 }
+
+    
 
     
