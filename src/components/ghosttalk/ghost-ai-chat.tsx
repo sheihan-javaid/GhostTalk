@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -37,7 +38,12 @@ const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
                 language={match[1]}
                 PreTag="div"
                 {...props}
-                customStyle={{ margin: 0, padding: '1rem', background: 'transparent' }}
+                customStyle={{ 
+                    margin: 0, 
+                    padding: '1rem', 
+                    background: 'transparent',
+                    fontFamily: 'monospace' 
+                }}
             >
                 {code}
             </SyntaxHighlighter>
