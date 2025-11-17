@@ -28,9 +28,9 @@ export async function anonymizeMessage(
         "X-Title": "GhostTalk PII Anonymizer"
       },
       body: JSON.stringify({
-        model: "anthropic/claude-3.5-sonnet", // Using a highly capable model
+        model: "qwen/qwen-2.5-7b-instruct", // Using a highly capable model
         temperature: 0, // Make it deterministic
-        max_tokens: 2000,
+        max_tokens: 128,
         messages: [
           {
             role: "system",

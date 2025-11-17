@@ -18,7 +18,7 @@ export async function moderateConfession(text: string): Promise<{ isAppropriate:
     }
 
     const completion = await openai.chat.completions.create({
-        model: 'mistralai/mistral-7b-instruct:free', 
+        model: 'qwen/qwen-2.5-7b-instruct', 
         messages: [
             {
                 role: 'system',
@@ -33,6 +33,7 @@ Respond with a JSON object with two keys: "isAppropriate" (boolean) and "reason"
         ],
         response_format: { type: 'json_object' },
         temperature: 0.1,
+        max_tokens: 128,
     });
     
     const responseJson = completion.choices[0].message.content;
