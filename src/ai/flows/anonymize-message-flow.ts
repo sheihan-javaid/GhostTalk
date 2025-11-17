@@ -3,47 +3,8 @@
 import type { AnonymizeMessageInput, AnonymizeMessageOutput } from "@/lib/types";
 
 /**
- * A deterministic, regex-based function to find and redact common PII patterns.
- * This approach is faster, more reliable, and cheaper than making an AI call.
- * 
- * @param text The input text to sanitize.
- * @returns An object containing the redacted text and a boolean indicating if changes were made.
- */
-function redactPII(text: string): { redacted: string; changed: boolean } {
-  let redactedText = text;
-  let wasChanged = false;
-
-  const patterns = [
-    // Matches common email formats.
-    { regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, replacement: "[email]" },
-    // Matches common North American phone numbers (e.g., 123-456-7890, (123) 456-7890).
-    { regex: /(?:\(?\d{3}\)?[\s.-]?)?\d{3}[\s.-]?\d{4}\b/g, replacement: "[contact]" },
-    // Matches simple capitalized names (e.g., John, Sarah). This is intentionally simple to avoid false positives.
-    // This will miss names that aren't capitalized but is a safer trade-off.
-    { regex: /\b[A-Z][a-z]+(?:\s[A-Z][a-z]+)*\b/g, replacement: "[name]" },
-     // A simple regex for locations that are capitalized (e.g., New York, London).
-    { regex: /\b[A-Z][a-z]+(?:,\s[A-Z]{2})?\b/g, replacement: "[location]" }
-  ];
-
-  // Exclude common capitalized words that are not names to reduce false positives.
-  const exclusionList = new Set(["I", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]);
-
-  for (const { regex, replacement } of patterns) {
-      redactedText = redactedText.replace(regex, (match) => {
-        if (replacement === "[name]" && exclusionList.has(match)) {
-          return match; // Don't replace words in the exclusion list.
-        }
-        wasChanged = true;
-        return replacement;
-      });
-  }
-
-  return { redacted: redactedText, changed: wasChanged };
-}
-
-/**
- * Server Action: Anonymizes a message by removing ONLY PII using a deterministic regex approach.
- * If anonymization is disabled or no PII is found, it returns the original message.
+ * Server Action: Anonymizes a message by identifying and redacting ONLY PII using Claude AI.
+ * This provides intelligent, context-aware PII detection while preserving all other content.
  */
 export async function anonymizeMessage(
   input: AnonymizeMessageInput
@@ -57,11 +18,83 @@ export async function anonymizeMessage(
     };
   }
 
-  // We are now using the reliable regex-based function.
-  const { redacted, changed } = redactPII(message);
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+        "X-Title": "PII Anonymizer"
+      },
+      body: JSON.stringify({
+        model: "anthropic/claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [
+          {
+            role: "user",
+            content: `You are a PII (Personally Identifiable Information) anonymizer. Your task is to identify and redact ONLY the following types of PII in the text below:
 
-  return {
-    anonymizedMessage: redacted,
-    anonymized: changed,
-  };
+- Full names (first and last names of real people)
+- Email addresses
+- Phone numbers
+- Physical addresses (street addresses, apartment numbers)
+- Social security numbers
+- Credit card numbers
+- Bank account numbers
+- Driver's license numbers
+- Passport numbers
+- IP addresses
+- Dates of birth
+- Medical record numbers
+
+IMPORTANT RULES:
+1. Replace each type of PII with a placeholder in square brackets: [name], [email], [phone], [address], [ssn], [credit_card], [account], [license], [passport], [ip], [dob], [medical_id]
+2. Do NOT redact common words, pronouns, or generic references
+3. Do NOT redact company names, product names, or brand names unless they are part of a personal identifier
+4. Preserve ALL punctuation, formatting, and non-PII content exactly as written
+5. Return ONLY the anonymized text with no explanations or additional commentary
+
+Text to anonymize:
+${message}`
+          }
+        ],
+      })
+    });
+
+    if (!response.ok) {
+      console.error('AI anonymization failed, falling back to original message');
+      return {
+        anonymizedMessage: message,
+        anonymized: false,
+      };
+    }
+
+    const data = await response.json();
+    const anonymizedText = data.choices?.[0]?.message?.content?.trim() || message;
+
+    // Check if any PII was actually redacted
+    const piiPlaceholders = [
+      '[name]', '[email]', '[phone]', '[address]', '[ssn]', 
+      '[credit_card]', '[account]', '[license]', '[passport]', 
+      '[ip]', '[dob]', '[medical_id]'
+    ];
+    
+    const wasAnonymized = piiPlaceholders.some(placeholder => 
+      anonymizedText.includes(placeholder)
+    );
+
+    return {
+      anonymizedMessage: anonymizedText,
+      anonymized: wasAnonymized,
+    };
+
+  } catch (error) {
+    console.error('Error during AI anonymization:', error);
+    // Fallback: return original message if AI call fails
+    return {
+      anonymizedMessage: message,
+      anonymized: false,
+    };
+  }
 }
