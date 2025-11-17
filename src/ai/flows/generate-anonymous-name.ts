@@ -1,3 +1,4 @@
+
 'use server';
 
 import OpenAI from 'openai';
@@ -14,15 +15,17 @@ const openai = new OpenAI({
 export async function generateAnonymousName(): Promise<{ name: string }> {
     try {
         const completion = await openai.chat.completions.create({
-            model: 'mistralai/mistral-7b-instruct:free',
-            messages: [{ role: 'user', content: `Generate one creative, anonymous username. The username must have a dark, gothic, and adult/adulterous theme. It should be a single word or two words combined without spaces. Return only the username, with no explanation or extra text.
+            model: 'anthropic/claude-3.5-sonnet',
+            messages: [{ role: 'user', content: `Generate one creative, anonymous username. The username must have a dark, gothic, and adult/adulterous theme. It should be a single word or two words combined without spaces. Return only the username, with no explanation, formatting, or extra text.
 
 Examples: VoidborneLust, RavenbloodAffair, NocturneSin, GraveyardParamour, AbyssalWhisper, DarkenedVow, MourningTemptation, ObsidianDesire, NightshadeLover, PhantomInVelvet, BlackThornSeduce, SinEaterKiss, GothicHeartbound, WraithInSilk, CrimsonTemptress, ShadowSeductress, VixenOfTheVoid, ForbiddenKiss, VelvetSinister, TemptationInBlack, SinfulWhisperer, SilkAndShadows, SeduceTheAbyss, DarkenedEnchantress, KissOfOblivion, SecretTemptation` }],
             max_tokens: 25,
-            temperature: 1.3,
+            temperature: 1.2,
         });
 
-        const name = completion.choices[0].message.content?.trim().replace(/"/g, '').replace(/\s+/g, '') || 'FallenSpecter';
+        // More robust cleaning: remove tokens, quotes, and spaces.
+        const name = completion.choices[0].message.content?.trim().replace(/<s>|<\/s>|"/g, '').replace(/\s+/g, '') || 'FallenSpecter';
+        
         return { name };
     } catch (error) {
         console.error('Failed to generate anonymous name with OpenRouter:', error);
