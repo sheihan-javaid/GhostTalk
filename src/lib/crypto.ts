@@ -15,7 +15,7 @@ interface StoredKeyPair {
 export async function generateKeyPair(): Promise<CryptoKeyPair> {
   const keyPair = await crypto.subtle.generateKey(
     { name: 'X25519' },
-    true,
+    true, // Can be exported
     ['deriveKey']
   );
   return keyPair;
@@ -171,7 +171,7 @@ export async function encrypt(
   );
   
   const sharedSecret = await crypto.subtle.deriveKey(
-    { name: 'X25519', public: recipientPublicKey },
+    { name: 'ECDH', public: recipientPublicKey },
     ephemeralKeyPair.privateKey,
     { name: 'AES-GCM', length: 256 },
     false, // Not extractable
@@ -248,7 +248,7 @@ export async function decrypt(encryptedPackageB64: string): Promise<string> {
   const senderEphemeralPublicKey = await importPublicKey(ephemPubKey);
   
   const sharedSecret = await crypto.subtle.deriveKey(
-    { name: 'X25519', public: senderEphemeralPublicKey },
+    { name: 'ECDH', public: senderEphemeralPublicKey },
     myPrivateKey,
     { name: 'AES-GCM', length: 256 },
     false,
