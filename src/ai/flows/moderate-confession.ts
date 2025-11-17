@@ -1,3 +1,4 @@
+
 'use server';
 
 import OpenAI from 'openai';
@@ -28,7 +29,7 @@ export async function moderateConfession(text: string): Promise<{ isAppropriate:
     }
 
     const completion = await openai.chat.completions.create({
-        model: 'qwen/qwen2.5-vl-32b-instruct:free', 
+        model: 'qwen/qwen-2.5-7b-instruct', 
         messages: [
             {
                 role: 'system',

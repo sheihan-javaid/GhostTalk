@@ -1,3 +1,4 @@
+
 'use server';
 
 import OpenAI from 'openai';
@@ -52,7 +53,7 @@ export async function ghostChat(history: any[]): Promise<string> {
         const openAIHistory = mapHistoryToOpenAI(history);
 
         const completion = await openai.chat.completions.create({
-            model: 'qwen/qwen2.5-vl-32b-instruct:free',
+            model: 'qwen/qwen-2.5-7b-instruct',
             messages: openAIHistory,
             max_tokens: 128,
             temperature: 0.7,

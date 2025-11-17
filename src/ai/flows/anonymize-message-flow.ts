@@ -1,3 +1,4 @@
+
 'use server';
 
 import type { AnonymizeMessageInput, AnonymizeMessageOutput } from "@/lib/types";
@@ -38,8 +39,8 @@ export async function anonymizeMessage(
         "X-Title": "GhostTalk PII Anonymizer"
       },
       body: JSON.stringify({
-        model: "qwen/qwen2.5-vl-32b-instruct:free", // Using a highly capable model
-        temperature: 0, // Make it deterministic
+        model: "qwen/qwen-2.5-7b-instruct",
+        temperature: 0, 
         max_tokens: 128,
         messages: [
           {
