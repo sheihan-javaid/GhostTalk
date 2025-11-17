@@ -9,16 +9,16 @@ const {getFirestore} = require("firebase-admin/firestore");
 initializeApp();
 
 /**
- * After a user leaves a whisper room (by being removed from the participants
- * map), this function checks if the room is empty. If it is, the function
- * deletes the entire room and its subcollections.
+ * After a user leaves a private or whisper room (by being removed from the 
+ * participants map), this function checks if the room is empty. If it is, 
+ * the function deletes the entire room and its subcollections.
  */
 exports.onParticipantLeave = onDocumentUpdated("chatRooms/{roomId}", async (event) => {
     const beforeData = event.data.before.data();
     const afterData = event.data.after.data();
 
-    // Not a whisper room, so do nothing.
-    if (!beforeData.isWhisper) {
+    // Only apply to private (non-public) rooms
+    if (beforeData.isPublic) {
         return;
     }
 
@@ -40,7 +40,7 @@ exports.onParticipantLeave = onDocumentUpdated("chatRooms/{roomId}", async (even
         // inaccessible and eventually cleaned up. For a more immediate/thorough
         // cleanup, we would need to recursively delete subcollection documents.
         // For this app, simply deleting the room doc is sufficient.
-        console.log(`Deleting empty whisper room: ${event.params.roomId}`);
+        console.log(`Deleting empty private/whisper room: ${event.params.roomId}`);
         await roomRef.delete();
     }
 });
