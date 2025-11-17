@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { anonymizeMessage } from '@/ai/flows/anonymize-message-flow';
 import { generateAnonymousName } from '@/ai/flows/generate-anonymous-name';
 import type { Message, UiSettings, ChatMessage, MessagePayload } from '@/lib/types';
@@ -167,64 +167,101 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
   const { data: firestoreMessages } = useCollection<Omit<ChatMessage, 'id' | 'text'>>(messagesQuery);
   
   // Step 4: Process and decrypt messages, and handle automatic deletion.
-  useEffect(() => {
-    if (!firestoreMessages || !isParticipant || !user || !firestore || !currentRoomId) return; 
+  const decryptedMessages = useMemo(() => {
+    if (!firestoreMessages || !user) return new Map<string, Message>();
 
-    const processMessages = async () => {
-      const now = Date.now();
-      const expirySeconds = settings.messageExpiry;
+    // This map will store the results so we don't re-decrypt
+    const newMessages = new Map<string, Message>();
+    const promises: Promise<void>[] = [];
 
-      const messagePromises = firestoreMessages.map(async (msg): Promise<Message | null> => {
+    for (const msg of firestoreMessages) {
         const concreteMsg = msg as ChatMessage & {id: string};
+        
+        // Decrypt only if not already in the cache
+        if (!messages.find(m => m.id === concreteMsg.id)) {
+            const promise = (async () => {
+                let decryptedPayload: MessagePayload;
+                try {
+                    const userPayload = concreteMsg.payloads?.[user.uid];
+                    if (userPayload) {
+                        const decryptedString = await crypto.decrypt(userPayload);
+                        decryptedPayload = JSON.parse(decryptedString);
+                    } else {
+                        return; // Not intended for this user
+                    }
+                } catch (error) {
+                    console.warn("Could not decrypt or parse message payload:", error, "Message ID:", concreteMsg.id);
+                    return;
+                }
+                
+                const processedMessage: Message = {
+                    id: concreteMsg.id,
+                    text: decryptedPayload.text,
+                    media: decryptedPayload.media,
+                    userId: concreteMsg.senderId,
+                    username: concreteMsg.senderName,
+                    timestamp: concreteMsg.timestamp,
+                    anonymized: !!concreteMsg.anonymized,
+                    isEdited: !!concreteMsg.isEdited,
+                };
+                newMessages.set(concreteMsg.id, processedMessage);
+            })();
+            promises.push(promise);
+        }
+    }
+    
+    // We don't use the result of Promise.all directly, just wait for it.
+    // The main benefit is populating newMessages.
+    // For a real app, we might handle promise rejections here.
+    Promise.all(promises);
 
-        if (expirySeconds > 0 && concreteMsg.timestamp instanceof Timestamp) {
-            const messageTime = concreteMsg.timestamp.toMillis();
+    // Combine old messages with newly decrypted ones
+    const combined = new Map<string, Message>();
+    messages.forEach(msg => combined.set(msg.id, msg));
+    newMessages.forEach((value, key) => combined.set(key, value));
+
+    return combined;
+
+}, [firestoreMessages, user, messages]); // `messages` is a dependency to access the old cache
+
+useEffect(() => {
+    if (!user || !firestore || !currentRoomId) return;
+
+    const now = Date.now();
+    const expirySeconds = settings.messageExpiry;
+
+    const finalMessages: Message[] = [];
+    let needsUpdate = false;
+
+    decryptedMessages.forEach((msg, id) => {
+        if (expirySeconds > 0 && msg.timestamp instanceof Timestamp) {
+            const messageTime = msg.timestamp.toMillis();
             if (now - messageTime > expirySeconds * 1000) {
-              // Check if the current user is the sender
-              if (concreteMsg.senderId === user.uid) {
-                // If so, delete the message from Firestore
-                const messageRef = doc(firestore, 'chatRooms', currentRoomId, 'messages', concreteMsg.id);
-                deleteDocumentNonBlocking(messageRef);
-              }
-              // In either case, don't display it if it's expired
-              return null;
+                // Check if the current user is the sender to delete from Firestore
+                if (msg.userId === user.uid) {
+                    const messageRef = doc(firestore, 'chatRooms', currentRoomId, 'messages', id);
+                    deleteDocumentNonBlocking(messageRef);
+                }
+                needsUpdate = true;
+                return; // Skip adding to final list
             }
         }
+        finalMessages.push(msg);
+    });
 
-        let decryptedPayload: MessagePayload;
-        try {
-          const userPayload = concreteMsg.payloads?.[user.uid];
-          if (userPayload) {
-            const decryptedString = await crypto.decrypt(userPayload);
-            decryptedPayload = JSON.parse(decryptedString);
-          } else {
-            return null; // Not intended for this user
-          }
-        } catch (error) {
-            console.warn("Could not decrypt or parse message payload:", error, "Message ID:", concreteMsg.id);
-            return null;
-        }
-        
-        return {
-          id: concreteMsg.id,
-          text: decryptedPayload.text,
-          media: decryptedPayload.media,
-          userId: concreteMsg.senderId,
-          username: concreteMsg.senderName,
-          timestamp: concreteMsg.timestamp,
-          anonymized: !!concreteMsg.anonymized,
-          isEdited: !!concreteMsg.isEdited,
-        };
-      });
+    // Sort messages by timestamp before setting state
+    finalMessages.sort((a, b) => {
+        const timeA = a.timestamp instanceof Timestamp ? a.timestamp.toMillis() : 0;
+        const timeB = b.timestamp instanceof Timestamp ? b.timestamp.toMillis() : 0;
+        return timeA - timeB;
+    });
 
-      const processedMessages = (await Promise.all(messagePromises))
-        .filter((msg): msg is Message => msg !== null);
-      
-      setMessages(processedMessages);
-    };
+    // Only update state if the final list is different from the current one
+    if (needsUpdate || finalMessages.length !== messages.length || finalMessages.some((m, i) => m.id !== messages[i]?.id)) {
+        setMessages(finalMessages);
+    }
 
-    processMessages();
-  }, [firestoreMessages, settings.messageExpiry, isParticipant, user, firestore, currentRoomId]);
+}, [decryptedMessages, settings.messageExpiry, user, firestore, currentRoomId, messages]);
 
 
   const handleSendMessage = useCallback(async (rawText: string, shouldAnonymize: boolean, mediaFile?: File) => {
@@ -420,3 +457,5 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
     </div>
   );
 }
+
+    
