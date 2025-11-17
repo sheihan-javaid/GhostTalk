@@ -210,17 +210,17 @@ export default function ChatLayout({ roomId: initialRoomId }: { roomId:string })
       let textToSend = rawText;
       let wasAnonymized = false;
 
-      if (shouldAnonymize && rawText.trim()) {
+      if (shouldAnonymize) {
         const result = await anonymizeMessage({ message: rawText });
         textToSend = result.anonymizedMessage;
         wasAnonymized = result.anonymized;
         if (wasAnonymized) {
-            toast({
-                variant: 'default',
-                title: "Message Anonymized",
-                description: "Your message was altered by our AI to protect your privacy.",
-                icon: <Sparkles className="text-accent" />,
-            })
+          toast({
+            variant: 'default',
+            title: "Message Anonymized",
+            description: "Your message was altered to protect your privacy.",
+            icon: <Sparkles className="text-accent" />,
+          });
         }
       }
 
